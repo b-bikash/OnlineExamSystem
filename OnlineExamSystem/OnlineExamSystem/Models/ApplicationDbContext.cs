@@ -11,5 +11,7 @@ namespace OnlineExamSystem.Models
         }
 
         public DbSet<Student> Students { get; set; }
+        public DbSet<ExamBehaviorLog> ExamBehaviorLogs { get; set; }
+
     }
 }
