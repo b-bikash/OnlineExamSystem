@@ -1,0 +1,20 @@
+﻿@model IEnumerable<OnlineExamSystem.Models.Question>
+
+<h2>Questions</h2>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Id</th>
+        <th>Text</th>
+        <th>Exam</th>
+    </tr>
+
+    @foreach (var q in Model)
+    {
+        <tr>
+            <td>@q.Id</td>
+            <td>@q.Text</td>
+            <td>@q.Exam.Title</td>
+        </tr>
+    }
+</table>

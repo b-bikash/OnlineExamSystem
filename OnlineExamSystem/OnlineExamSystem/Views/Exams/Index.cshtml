@@ -1,0 +1,22 @@
+﻿@model IEnumerable<OnlineExamSystem.Models.Exam>
+
+<h2>Exams</h2>
+
+<a asp-action="Create">Create New Exam</a>
+
+<table border="1">
+    <tr>
+        <th>Id</th>
+        <th>Title</th>
+        <th>Duration</th>
+    </tr>
+
+    @foreach (var exam in Model)
+    {
+        <tr>
+            <td>@exam.Id</td>
+            <td>@exam.Title</td>
+            <td>@exam.DurationInMinutes</td>
+        </tr>
+    }
+</table>
