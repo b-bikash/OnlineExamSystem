@@ -1,0 +1,16 @@
+﻿@model OnlineExamSystem.Models.Question
+
+<h2>Edit Question</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ExamId" />
+
+    <div>
+        <label>Question Text</label><br />
+        <input asp-for="Text" />
+    </div>
+
+    <br />
+    <button type="submit">Save</button>
+</form>

@@ -2,13 +2,16 @@
 
 <h2>Exams</h2>
 
-<a asp-action="Create">Create New Exam</a>
+<p>
+    <a asp-action="Create">Create New Exam</a>
+</p>
 
-<table border="1">
+<table border="1" cellpadding="5">
     <tr>
         <th>Id</th>
         <th>Title</th>
         <th>Duration</th>
+        <th>Action</th>
     </tr>
 
     @foreach (var exam in Model)
@@ -17,6 +20,13 @@
             <td>@exam.Id</td>
             <td>@exam.Title</td>
             <td>@exam.DurationInMinutes</td>
+            <td>
+                <a asp-controller="ExamAttempts"
+                   asp-action="Start"
+                   asp-route-examId="@exam.Id">
+                    Start Exam
+                </a>
+            </td>
         </tr>
     }
 </table>

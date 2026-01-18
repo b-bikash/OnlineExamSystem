@@ -1,0 +1,17 @@
+﻿@model OnlineExamSystem.Models.Question
+
+<h2>Delete Question</h2>
+
+<p>
+    Are you sure you want to delete this question?
+</p>
+
+<p>
+    <strong>@Model.Text</strong>
+</p>
+
+<form asp-action="DeleteConfirmed" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit">Yes, Delete</button>
+    <a asp-action="Index">Cancel</a>
+</form>

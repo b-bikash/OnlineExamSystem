@@ -1,0 +1,49 @@
+﻿@model OnlineExamSystem.Models.Question
+
+<h2>Answer Question</h2>
+
+<p>
+    <strong>Question:</strong> @Model.Text
+</p>
+
+<p>
+    <strong>Exam:</strong> @Model.Exam.Title
+</p>
+
+<p>
+    <strong>Attempt Id:</strong> @ViewBag.AttemptId
+</p>
+
+<hr />
+
+<form asp-action="SelectAnswer" method="post">
+    <input type="hidden" name="QuestionId" value="@Model.Id" />
+    <input type="hidden" name="ExamAttemptId" value="@ViewBag.AttemptId" />
+
+    <label>
+        <input type="radio" name="SelectedAnswer" value="A" /> Option A
+    </label><br />
+
+    <label>
+        <input type="radio" name="SelectedAnswer" value="B" /> Option B
+    </label><br />
+
+    <label>
+        <input type="radio" name="SelectedAnswer" value="C" /> Option C
+    </label><br />
+
+    <label>
+        <input type="radio" name="SelectedAnswer" value="D" /> Option D
+    </label><br /><br />
+
+    <button type="submit">Submit Answer</button>
+</form>
+
+
+<p>
+    <a asp-action="Index"
+       asp-route-examId="@Model.ExamId"
+       asp-route-attemptId="@ViewBag.AttemptId">
+        Back to Questions
+    </a>
+</p>

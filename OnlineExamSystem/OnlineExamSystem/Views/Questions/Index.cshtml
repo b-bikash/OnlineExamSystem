@@ -2,11 +2,14 @@
 
 <h2>Questions</h2>
 
+<p><strong>Attempt Id:</strong> @ViewBag.AttemptId</p>
+
 <table border="1" cellpadding="5">
     <tr>
         <th>Id</th>
         <th>Text</th>
         <th>Exam</th>
+        <th>Action</th>
     </tr>
 
     @foreach (var q in Model)
@@ -15,6 +18,13 @@
             <td>@q.Id</td>
             <td>@q.Text</td>
             <td>@q.Exam.Title</td>
+            <td>
+                <form asp-controller="Questions" asp-action="SelectAnswer" method="get">
+                    <input type="hidden" name="questionId" value="@q.Id" />
+                    <input type="hidden" name="attemptId" value="@ViewBag.AttemptId" />
+                    <button type="submit">Select Answer</button>
+                </form>
+            </td>
         </tr>
     }
 </table>
