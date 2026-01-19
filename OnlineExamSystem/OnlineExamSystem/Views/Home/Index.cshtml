@@ -1,8 +1,39 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+
+            <h1 class="display-5 fw-bold mb-3">
+                Online Examination System
+            </h1>
+
+            <p class="lead text-muted">
+                A secure and user-friendly platform to conduct online exams for students
+                and manage examinations efficiently for teachers and administrators.
+            </p>
+
+            <hr class="my-4" />
+
+            <p class="text-muted">
+                Students can register to attempt available exams, while teachers can
+                create and manage exams with ease.
+            </p>
+
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <a asp-controller="Account" asp-action="Login"
+                   class="btn btn-primary btn-lg px-4">
+                    Login
+                </a>
+
+                <a asp-controller="Account" asp-action="Register"
+                   class="btn btn-outline-secondary btn-lg px-4">
+                    Register
+                </a>
+            </div>
+
+        </div>
+    </div>
 </div>

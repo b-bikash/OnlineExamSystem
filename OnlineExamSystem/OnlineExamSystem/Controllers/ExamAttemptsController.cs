@@ -3,7 +3,7 @@ using OnlineExamSystem.Models;
 
 namespace OnlineExamSystem.Controllers
 {
-    public class ExamAttemptsController : Controller
+    public class ExamAttemptsController : BaseController
     {
         private readonly ApplicationDbContext _context;
 

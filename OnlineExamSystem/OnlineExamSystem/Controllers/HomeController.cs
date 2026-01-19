@@ -4,8 +4,10 @@ using OnlineExamSystem.Models;
 
 namespace OnlineExamSystem.Controllers
 {
+    // Public controller (NO authentication)
     public class HomeController : Controller
     {
+        // Public landing page
         public IActionResult Index()
         {
             return View();
@@ -19,7 +21,10 @@ namespace OnlineExamSystem.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
 }

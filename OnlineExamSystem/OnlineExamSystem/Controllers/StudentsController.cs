@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace OnlineExamSystem.Controllers
 {
-    public class StudentsController : Controller
+    public class StudentsController : BaseController
     {
         private readonly ApplicationDbContext _context;
 

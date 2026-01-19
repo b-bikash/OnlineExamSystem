@@ -1,0 +1,61 @@
+﻿@model OnlineExamSystem.Models.User
+
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<h2 class="mb-4">Edit User</h2>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.Error
+            </div>
+        }
+
+        <form method="post">
+
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input class="form-control" value="@Model.Username" disabled />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input name="Email" type="email"
+                       class="form-control"
+                       value="@Model.Email" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Role</label>
+                <select name="Role" class="form-select" required>
+                    <option value="Admin" selected="@(Model.Role == "Admin")">Admin</option>
+                    <option value="Teacher" selected="@(Model.Role == "Teacher")">Teacher</option>
+                    <option value="Student" selected="@(Model.Role == "Student")">Student</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">New Password (optional)</label>
+                <input name="Password" type="password"
+                       class="form-control"
+                       placeholder="Leave blank to keep current password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary ms-2">
+                Cancel
+            </a>
+
+        </form>
+    </div>
+</div>

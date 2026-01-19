@@ -1,0 +1,56 @@
+﻿@model OnlineExamSystem.Models.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h2>Register</h2>
+
+<form asp-action="Register" method="post">
+
+    <div>
+        <label>Username</label><br />
+        <input asp-for="Username" />
+        <span asp-validation-for="Username" style="color:red"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label>Email</label><br />
+        <input asp-for="Email" />
+        <span asp-validation-for="Email" style="color:red"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label>Password</label><br />
+        <input asp-for="Password" type="password" />
+        <span asp-validation-for="Password" style="color:red"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label>Role</label><br />
+        <select asp-for="Role">
+            <option value="">Select Role</option>
+            <option value="Student">Student</option>
+            <option value="Teacher">Teacher</option>
+        </select>
+        <span asp-validation-for="Role" style="color:red"></span>
+    </div>
+
+    <br />
+
+    <button type="submit">Register</button>
+
+    <br /><br />
+
+    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+        <p style="color:red">@error.ErrorMessage</p>
+    }
+
+</form>

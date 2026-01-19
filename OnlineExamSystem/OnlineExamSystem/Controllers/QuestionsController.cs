@@ -5,7 +5,7 @@ using OnlineExamSystem.Models;
 
 namespace OnlineExamSystem.Controllers
 {
-    public class QuestionsController : Controller
+    public class QuestionsController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
