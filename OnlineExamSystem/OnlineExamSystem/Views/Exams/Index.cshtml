@@ -1,34 +1,35 @@
-﻿@model List<OnlineExamSystem.Models.Exam>
+﻿
+
+@model IEnumerable<OnlineExamSystem.Models.Exam>
 
 <h2>Exams</h2>
 
 <a asp-action="Create" class="btn btn-primary mb-3">Create Exam</a>
 
-@if (!Model.Any())
-{
-    <p>No exams found.</p>
-}
-else
-{
-    <table class="table table-bordered">
-        <thead>
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Duration (mins)</th>
+            <th>Total Marks</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var exam in Model)
+        {
             <tr>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Duration (mins)</th>
-                <th>Total Marks</th>
+                <td>@exam.Title</td>
+                <td>@exam.Description</td>
+                <td>@exam.DurationInMinutes</td>
+                <td>@exam.TotalMarks</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@exam.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@exam.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (var exam in Model)
-            {
-                <tr>
-                    <td>@exam.Title</td>
-                    <td>@exam.Description</td>
-                    <td>@exam.DurationInMinutes</td>
-                    <td>@exam.TotalMarks</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+        }
+    </tbody>
+</table>

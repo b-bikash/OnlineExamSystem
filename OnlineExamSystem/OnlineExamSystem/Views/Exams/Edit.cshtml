@@ -1,0 +1,49 @@
+@model OnlineExamSystem.Models.Exam
+
+@{
+    ViewData["Title"] = "Edit Exam";
+}
+
+<h2>Edit Exam</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <!-- Title -->
+    <div class="form-group mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <!-- Duration -->
+    <div class="form-group mb-3">
+        <label asp-for="DurationInMinutes" class="form-label"></label>
+        <input asp-for="DurationInMinutes" class="form-control" />
+        <span asp-validation-for="DurationInMinutes" class="text-danger"></span>
+    </div>
+
+    <!-- Total Marks -->
+    <div class="form-group mb-3">
+        <label asp-for="TotalMarks" class="form-label"></label>
+        <input asp-for="TotalMarks" class="form-control" />
+        <span asp-validation-for="TotalMarks" class="text-danger"></span>
+    </div>
+
+    <!-- Buttons -->
+    <button type="submit" class="btn btn-primary">Update</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
