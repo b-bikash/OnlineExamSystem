@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -19,6 +22,11 @@ namespace OnlineExamSystem.Controllers
         {
             var role = HttpContext.Session.GetString("Role");
             return role == "Teacher" || role == "Admin";
+        }
+
+        private bool ExamExists(int id)
+        {
+            return _context.Exams.Any(e => e.Id == id);
         }
 
         // ---------------- INDEX ----------------
@@ -40,20 +48,14 @@ namespace OnlineExamSystem.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(Exam exam)
-        {
-            if (!IsTeacherOrAdmin())
-                return Unauthorized();
+public IActionResult Create(Exam exam)
+{
+    _context.Exams.Add(exam);
+    _context.SaveChanges();
 
-            if (!ModelState.IsValid)
-                return View(exam);
+    return RedirectToAction("Index");
+}
 
-            _context.Exams.Add(exam);
-            _context.SaveChanges();
-
-            return RedirectToAction(nameof(Index));
-        }
 
         // ---------------- EDIT ----------------
 
@@ -70,23 +72,25 @@ namespace OnlineExamSystem.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Exam exam)
-        {
-            if (!IsTeacherOrAdmin())
-                return Unauthorized();
+public IActionResult Edit(int id, Exam exam)
+{
+    var examFromDb = _context.Exams.Find(id);
+    if (examFromDb == null)
+        return NotFound();
 
-            if (id != exam.Id)
-                return BadRequest();
+    examFromDb.Title = exam.Title;
+    examFromDb.Description = exam.Description;
+    examFromDb.DurationInMinutes = exam.DurationInMinutes;
+    examFromDb.TotalMarks = exam.TotalMarks;
 
-            if (!ModelState.IsValid)
-                return View(exam);
+    _context.SaveChanges();
+    TempData["SuccessMessage"] = "Exam updated successfully!";
 
-            _context.Exams.Update(exam);
-            _context.SaveChanges();
+    // ✅ Redirect back to Exams list page
+    return RedirectToAction("Index");
+}
 
-            return RedirectToAction(nameof(Index));
-        }
+
 
         // ---------------- DELETE ----------------
 

@@ -2,29 +2,29 @@
 
 <h2>Create Exam</h2>
 
-<form asp-action="Create" method="post">
-    <div class="form-group">
-        <label asp-for="Title"></label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
+<form action="/Exams/Create" method="post">
+
+    <div class="mb-3">
+        <label>Title</label>
+        <input class="form-control" name="Title" />
     </div>
 
-    <div class="form-group">
-        <label asp-for="Description"></label>
-        <textarea asp-for="Description" class="form-control"></textarea>
+    <div class="mb-3">
+        <label>Description</label>
+        <textarea class="form-control" name="Description"></textarea>
     </div>
 
-    <div class="form-group">
-        <label asp-for="DurationInMinutes"></label>
-        <input asp-for="DurationInMinutes" class="form-control" />
+    <div class="mb-3">
+        <label>Duration In Minutes</label>
+        <input class="form-control" name="DurationInMinutes" />
     </div>
 
-    <div class="form-group">
-        <label asp-for="TotalMarks"></label>
-        <input asp-for="TotalMarks" class="form-control" />
+    <div class="mb-3">
+        <label>Total Marks</label>
+        <input class="form-control" name="TotalMarks" />
     </div>
 
-    <br />
     <button type="submit" class="btn btn-success">Save</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <a href="/Exams" class="btn btn-secondary">Cancel</a>
+
 </form>

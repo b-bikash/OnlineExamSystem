@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace OnlineExamSystem.Models
@@ -21,5 +22,6 @@ namespace OnlineExamSystem.Models
         public int TotalMarks { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<Question> Questions { get; set; }
     }
 }

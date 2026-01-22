@@ -1,49 +1,32 @@
 @model OnlineExamSystem.Models.Exam
 
-@{
-    ViewData["Title"] = "Edit Exam";
-}
-
 <h2>Edit Exam</h2>
 
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="Id" />
+<form action="/Exams/Edit/@Model.Id" method="post">
 
-    <!-- Title -->
-    <div class="form-group mb-3">
-        <label asp-for="Title" class="form-label"></label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
+    <input type="hidden" name="Id" value="@Model.Id" />
+
+    <div class="mb-3">
+        <label>Title</label>
+        <input class="form-control" name="Title" value="@Model.Title" />
     </div>
 
-    <!-- Description -->
-    <div class="form-group mb-3">
-        <label asp-for="Description" class="form-label"></label>
-        <textarea asp-for="Description" class="form-control"></textarea>
-        <span asp-validation-for="Description" class="text-danger"></span>
+    <div class="mb-3">
+        <label>Description</label>
+        <textarea class="form-control" name="Description">@Model.Description</textarea>
     </div>
 
-    <!-- Duration -->
-    <div class="form-group mb-3">
-        <label asp-for="DurationInMinutes" class="form-label"></label>
-        <input asp-for="DurationInMinutes" class="form-control" />
-        <span asp-validation-for="DurationInMinutes" class="text-danger"></span>
+    <div class="mb-3">
+        <label>Duration In Minutes</label>
+        <input class="form-control" name="DurationInMinutes" value="@Model.DurationInMinutes" />
     </div>
 
-    <!-- Total Marks -->
-    <div class="form-group mb-3">
-        <label asp-for="TotalMarks" class="form-label"></label>
-        <input asp-for="TotalMarks" class="form-control" />
-        <span asp-validation-for="TotalMarks" class="text-danger"></span>
+    <div class="mb-3">
+        <label>Total Marks</label>
+        <input class="form-control" name="TotalMarks" value="@Model.TotalMarks" />
     </div>
 
-    <!-- Buttons -->
     <button type="submit" class="btn btn-primary">Update</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-</form>
+    <a href="/Exams" class="btn btn-secondary">Cancel</a>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
+</form>

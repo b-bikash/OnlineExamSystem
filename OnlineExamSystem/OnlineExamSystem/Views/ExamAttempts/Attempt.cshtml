@@ -1,0 +1,180 @@
+@model OnlineExamSystem.Models.ExamAttemptViewModel
+
+@{
+    ViewData["Title"] = "Exam Attempt";
+    Layout = "_Layout";
+}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f6f8;
+    }
+
+    .exam-header {
+        background-color: #1e3a8a;
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .student-info {
+        background-color: #e5e7eb;
+        padding: 10px 20px;
+        font-weight: bold;
+    }
+
+    .exam-container {
+        display: flex;
+        padding: 20px;
+    }
+
+    .question-nav {
+        width: 20%;
+        background-color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-right: 20px;
+    }
+
+    .question-nav button {
+        width: 45px;
+        height: 45px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        background-color: #d1d5db;
+        cursor: pointer;
+    }
+
+    .question-area {
+        width: 80%;
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+    }
+
+    .options label {
+        display: block;
+        margin: 10px 0;
+    }
+
+    .actions {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .actions button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+    }
+
+    .previous { background-color: #6b7280; }
+    .review   { background-color: #f59e0b; }
+    .save     { background-color: #2563eb; }
+
+    .submit {
+        background-color: #dc2626;
+        margin-top: 20px;
+        float: right;
+        padding: 10px 25px;
+        border-radius: 5px;
+        color: white;
+        border: none;
+    }
+</style>
+
+<!-- ================= HEADER ================= -->
+<div class="exam-header">
+    <div>📘 @Model.ExamTitle</div>
+    <div>⏱ Duration: @Model.DurationInMinutes minutes</div>
+    <div>Logout 🔒</div>
+</div>
+
+<!-- ================= STUDENT INFO ================= -->
+<div class="student-info">
+    Student ID: 1 | Attempt ID: @Model.AttemptId
+</div>
+
+<!-- ================= MAIN CONTENT ================= -->
+<div class="exam-container">
+
+    <!-- Question Navigation -->
+    <div class="question-nav">
+        <h4>Questions</h4>
+
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            <a asp-action="Attempt"
+               asp-route-attemptId="@Model.AttemptId"
+               asp-route-questionIndex="@i">
+                <button type="button">@(i + 1)</button>
+            </a>
+        }
+    </div>
+
+    <!-- Question Area -->
+    <div class="question-area">
+        <h3>Question @(Model.CurrentQuestionIndex + 1)</h3>
+
+        <p>@Model.Question.Text</p>
+
+        <!-- ANSWER FORM -->
+        <form method="post">
+            <input type="hidden" name="questionId" value="@Model.Question.Id" />
+            <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+
+            <div class="options">
+                <label>
+                    <input type="radio" name="selectedAnswer" value="A" /> Option A
+                </label>
+
+                <label>
+                    <input type="radio" name="selectedAnswer" value="B" /> Option B
+                </label>
+
+                <label>
+                    <input type="radio" name="selectedAnswer" value="C" /> Option C
+                </label>
+
+                <label>
+                    <input type="radio" name="selectedAnswer" value="D" /> Option D
+                </label>
+            </div>
+
+            <div class="actions">
+                @if (Model.CurrentQuestionIndex > 0)
+                {
+                    <a asp-action="Attempt"
+                       asp-route-attemptId="@Model.AttemptId"
+                       asp-route-questionIndex="@(Model.CurrentQuestionIndex - 1)">
+                        <button type="button" class="previous">Previous</button>
+                    </a>
+                }
+
+                <button type="button" class="review">Mark for Review</button>
+
+                @if (Model.CurrentQuestionIndex < Model.TotalQuestions - 1)
+                {
+                    <a asp-action="Attempt"
+                       asp-route-attemptId="@Model.AttemptId"
+                       asp-route-questionIndex="@(Model.CurrentQuestionIndex + 1)">
+                        <button type="button" class="save">Save & Next</button>
+                    </a>
+                }
+            </div>
+        </form>
+
+        <!-- SUBMIT EXAM -->
+        <form asp-action="Submit" method="post">
+            <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+            <button type="submit" class="submit">Submit Exam</button>
+        </form>
+    </div>
+</div>
