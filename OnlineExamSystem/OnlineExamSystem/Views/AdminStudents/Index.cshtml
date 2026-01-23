@@ -1,0 +1,87 @@
+﻿@model IEnumerable<OnlineExamSystem.Models.Student>
+
+@{
+    ViewData["Title"] = "Student Management";
+}
+
+<h2 class="mb-4">Student Management</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get" class="d-flex mb-3" style="max-width: 400px;">
+    <input type="text"
+           name="search"
+           value="@ViewBag.Search"
+           class="form-control me-2"
+           placeholder="Search by email or roll number" />
+    <button type="submit" class="btn btn-outline-secondary">
+        Search
+    </button>
+</form>
+
+@if (Model.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <table class="table table-bordered table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Course</th>
+                        <th>College</th>
+                        <th>Roll Number</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in Model)
+                    {
+                        <tr>
+                            <td>@student.Name</td>
+                            <td>@student.User?.Email</td>
+                            <td>@student.Course?.Name</td>
+                            <td>@student.College?.Name</td>
+                            <td>@student.RollNumber</td>
+                            <td>
+                                <a asp-action="Edit"
+                                   asp-route-id="@student.Id"
+                                   class="btn btn-sm btn-warning">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+}
+else
+{
+    <div class="border rounded p-4 text-center text-muted mt-4">
+        <h5>No students found</h5>
+        <p class="mb-2">
+            Try searching by email or roll number.
+        </p>
+        <p class="mb-0">
+            Students appear here after registration and profile completion.
+        </p>
+    </div>
+}

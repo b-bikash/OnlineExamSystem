@@ -10,6 +10,12 @@ namespace OnlineExamSystem.Controllers
         // Public landing page
         public IActionResult Index()
         {
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId != null)
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
             return View();
         }
 

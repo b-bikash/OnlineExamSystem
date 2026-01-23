@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OnlineExamSystem.Models;
 using OnlineExamSystem.Helpers;
+using OnlineExamSystem.Models;
 using System.Linq;
 
 namespace OnlineExamSystem.Controllers
@@ -14,12 +14,48 @@ namespace OnlineExamSystem.Controllers
             _context = context;
         }
 
+        // =========================
+        // LOGIN
+        // =========================
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
+        [HttpPost]
+        public IActionResult Login(string usernameOrEmail, string password)
+        {
+            if (string.IsNullOrEmpty(usernameOrEmail) || string.IsNullOrEmpty(password))
+            {
+                ViewBag.Error = "Please enter username/email and password.";
+                return View();
+            }
+
+            var hashedPassword = PasswordHelper.HashPassword(password);
+
+            var user = _context.Users.FirstOrDefault(u =>
+                (u.Username == usernameOrEmail || u.Email == usernameOrEmail)
+                && u.PasswordHash == hashedPassword
+                && u.IsActive
+            );
+
+            if (user == null)
+            {
+                ViewBag.Error = "Invalid login credentials.";
+                return View();
+            }
+
+            HttpContext.Session.SetInt32("UserId", user.Id);
+            HttpContext.Session.SetString("Username", user.Username);
+            HttpContext.Session.SetString("Role", user.Role);
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        // =========================
+        // REGISTER
+        // =========================
         [HttpGet]
         public IActionResult Register()
         {
@@ -63,43 +99,38 @@ namespace OnlineExamSystem.Controllers
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            // No auto-login
+            // ✅ CREATE STUDENT ROW HERE (EMPTY)
+            if (user.Role == "Student")
+            {
+                var student = new Student
+                {
+                    UserId = user.Id,
+                    Name = user.Username
+                    // CourseId, CollegeId, RollNumber = NULL
+                };
+
+                _context.Students.Add(student);
+            }
+            else if (user.Role == "Teacher")
+            {
+                var teacher = new Teacher
+                {
+                    UserId = user.Id,
+                    Name = user.Username
+                };
+
+                _context.Teachers.Add(teacher);
+            }
+
+            _context.SaveChanges();
+
             return RedirectToAction("Login");
         }
 
 
-
-        [HttpPost]
-        public IActionResult Login(string usernameOrEmail, string password)
-        {
-            if (string.IsNullOrEmpty(usernameOrEmail) || string.IsNullOrEmpty(password))
-            {
-                ViewBag.Error = "Please enter username/email and password.";
-                return View();
-            }
-
-            var hashedPassword = PasswordHelper.HashPassword(password);
-
-            var user = _context.Users.FirstOrDefault(u =>
-                (u.Username == usernameOrEmail || u.Email == usernameOrEmail)
-                && u.PasswordHash == hashedPassword
-                && u.IsActive
-            );
-
-            if (user == null)
-            {
-                ViewBag.Error = "Invalid login credentials.";
-                return View();
-            }
-
-            // 🔐 STORE USER INFO IN SESSION
-            HttpContext.Session.SetInt32("UserId", user.Id);
-            HttpContext.Session.SetString("Username", user.Username);
-            HttpContext.Session.SetString("Role", user.Role);
-
-            return RedirectToAction("Index", "Dashboard");
-        }
-
+        // =========================
+        // LOGOUT
+        // =========================
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

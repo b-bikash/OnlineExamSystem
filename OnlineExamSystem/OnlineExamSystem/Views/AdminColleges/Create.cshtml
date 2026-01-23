@@ -1,0 +1,30 @@
+﻿@model OnlineExamSystem.Models.College
+
+@{
+    ViewData["Title"] = "Add College";
+}
+
+<h2 class="mb-4">Add College</h2>
+
+<form asp-action="Create" method="post">
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary ms-2">
+                Cancel
+            </a>
+
+        </div>
+    </div>
+</form>

@@ -1,0 +1,72 @@
+﻿@model OnlineExamSystem.Models.Student
+
+@{
+    ViewData["Title"] = "Edit Student";
+}
+
+<h2>Edit Student</h2>
+
+<form asp-action="Edit" method="post">
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="User.Id" />
+
+    <div class="card shadow-sm border-0 mt-3">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input asp-for="User.Email" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Course</label>
+                <select asp-for="CourseId" class="form-select">
+                    <option value="">-- Select Course --</option>
+                    @foreach (var course in ViewBag.Courses)
+                    {
+                        <option value="@course.Id">
+                            @course.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+
+            <div class="mb-3">
+                <label class="form-label">College</label>
+                <select asp-for="CollegeId" class="form-select">
+                    <option value="">-- Select College --</option>
+                    @foreach (var college in ViewBag.Colleges)
+                    {
+                        <option value="@college.Id">
+                            @college.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+
+            <div class="mb-3">
+                <label asp-for="RollNumber" class="form-label"></label>
+                <input asp-for="RollNumber" class="form-control" />
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    Save Changes
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary ms-2">
+                    Cancel
+                </a>
+            </div>
+
+        </div>
+    </div>
+</form>

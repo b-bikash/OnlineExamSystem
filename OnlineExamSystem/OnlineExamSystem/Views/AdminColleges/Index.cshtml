@@ -1,0 +1,100 @@
+﻿@model List<OnlineExamSystem.Models.College>
+
+@{
+    ViewData["Title"] = "College Management";
+}
+
+<h2 class="mb-4">College Management</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get" class="d-flex mb-3" style="max-width: 400px;">
+    <input type="text"
+           name="search"
+           value="@ViewBag.Search"
+           class="form-control me-2"
+           placeholder="Search by college name" />
+    <button type="submit" class="btn btn-outline-secondary">
+        Search
+    </button>
+</form>
+
+<a asp-action="Create" class="btn btn-success mb-3">
+    + Add College
+</a>
+
+@if (Model.Any())
+{
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var college in Model)
+            {
+                <tr>
+                    <td>@college.Name</td>
+                    <td>
+                        @if (college.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a asp-action="Edit"
+                               asp-route-id="@college.Id"
+                               class="btn btn-sm btn-warning">
+                                Edit
+                            </a>
+
+                            <a asp-action="ToggleStatus"
+                               asp-route-id="@college.Id"
+                               class="btn btn-sm btn-secondary">
+                                @(college.IsActive ? "Disable" : "Enable")
+                            </a>
+
+                            <a asp-action="Delete"
+                               asp-route-id="@college.Id"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Are you sure you want to delete this college?');">
+                                Delete
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="border rounded p-4 text-center text-muted mt-4">
+        <h5>No colleges found</h5>
+        <p class="mb-0">
+            Try searching by name or add a new college.
+        </p>
+    </div>
+}

@@ -14,15 +14,25 @@ namespace OnlineExamSystem.Controllers
             _context = context;
         }
 
-        // LIST USERS
-        public IActionResult Index()
+        // LIST USERS + EMAIL SEARCH
+        public IActionResult Index(string searchEmail)
         {
             if (HttpContext.Session.GetString("Role") != "Admin")
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var users = _context.Users.ToList();
+            var usersQuery = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchEmail))
+            {
+                usersQuery = usersQuery
+                    .Where(u => u.Email.Contains(searchEmail));
+            }
+
+            ViewBag.SearchEmail = searchEmail;
+
+            var users = usersQuery.ToList();
             return View(users);
         }
 
@@ -104,7 +114,6 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index");
             }
 
-            // 🔒 Duplicate email check (excluding current user)
             if (_context.Users.Any(u => u.Email == Email && u.Id != id))
             {
                 ViewBag.Error = "Email already exists";
@@ -114,7 +123,6 @@ namespace OnlineExamSystem.Controllers
             user.Email = Email;
             user.Role = Role;
 
-            // Update password only if provided
             if (!string.IsNullOrWhiteSpace(Password))
             {
                 user.PasswordHash = PasswordHelper.HashPassword(Password);
@@ -124,8 +132,7 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction("Index");
         }
 
-
-        // DELETE (GET - Confirmation)
+        // DELETE (GET)
         public IActionResult Delete(int id)
         {
             if (HttpContext.Session.GetString("Role") != "Admin")
@@ -133,7 +140,6 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Prevent deleting yourself
             var currentUserId = HttpContext.Session.GetInt32("UserId");
             if (currentUserId == id)
             {
@@ -168,6 +174,29 @@ namespace OnlineExamSystem.Controllers
             _context.SaveChanges();
 
             return RedirectToAction("Index");
+        }
+
+        // TOGGLE ACTIVE STATUS
+        public IActionResult ToggleStatus(int id)
+        {
+            var role = HttpContext.Session.GetString("Role");
+
+            if (role != "Admin")
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.IsActive = !user.IsActive;
+            _context.SaveChanges();
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }

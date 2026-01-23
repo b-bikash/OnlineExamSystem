@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnlineExamSystem.Models;
 
@@ -11,9 +12,11 @@ using OnlineExamSystem.Models;
 namespace OnlineExamSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260119150513_AddCollegesTable")]
+    partial class AddCollegesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,7 +60,7 @@ namespace OnlineExamSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsActive")
+                    b.Property<bool>("IsApproved")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -223,21 +226,16 @@ namespace OnlineExamSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CollegeId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("CourseId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("IsProfileCompleted")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RollNumber")
-                        .HasColumnType("nvarchar(450)");
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -247,10 +245,6 @@ namespace OnlineExamSystem.Migrations
                     b.HasIndex("CourseId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("CollegeId", "RollNumber")
-                        .IsUnique()
-                        .HasFilter("[CollegeId] IS NOT NULL AND [RollNumber] IS NOT NULL");
 
                     b.ToTable("Students");
                 });
@@ -366,10 +360,6 @@ namespace OnlineExamSystem.Migrations
 
             modelBuilder.Entity("OnlineExamSystem.Models.Student", b =>
                 {
-                    b.HasOne("OnlineExamSystem.Models.College", "College")
-                        .WithMany()
-                        .HasForeignKey("CollegeId");
-
                     b.HasOne("OnlineExamSystem.Models.Course", "Course")
                         .WithMany()
                         .HasForeignKey("CourseId");
@@ -379,8 +369,6 @@ namespace OnlineExamSystem.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("College");
 
                     b.Navigation("Course");
 

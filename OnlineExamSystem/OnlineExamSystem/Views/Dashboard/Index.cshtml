@@ -17,7 +17,7 @@
         @* ADMIN *@
         @if (role == "Admin")
         {
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">User Management</h5>
@@ -33,10 +33,65 @@
             </div>
         }
 
+        @if (role == "Admin")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Student Management</h5>
+                        <p class="card-text text-muted">
+                            View and correct student details.
+                        </p>
+                        <a asp-controller="AdminStudents" asp-action="Index"
+                           class="btn btn-secondary btn-sm">
+                            View Students
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (role == "Admin")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Course Management</h5>
+                        <p class="card-text text-muted">
+                            View and manage courses.
+                        </p>
+                        <a asp-controller="AdminCourses" asp-action="Index"
+                           class="btn btn-info btn-sm">
+                            Manage Courses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (role == "Admin")
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">College Management</h5>
+                        <p class="card-text text-muted">
+                            View and manage colleges.
+                        </p>
+                        <a asp-controller="AdminColleges" asp-action="Index"
+                           class="btn btn-dark btn-sm">
+                            Manage Colleges
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+
         @* TEACHER *@
         @if (role == "Teacher")
         {
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">Exam Management</h5>
@@ -55,7 +110,7 @@
         @* STUDENT *@
         @if (role == "Student")
         {
-            <div class="col-md-4">
+            <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">Available Exams</h5>

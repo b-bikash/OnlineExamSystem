@@ -1,0 +1,20 @@
+﻿@model OnlineExamSystem.Models.Student
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h2>My Profile</h2>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <p><strong>Full Name:</strong> @Model.Name</p>
+        <p><strong>Course:</strong> @Model.Course?.Name</p>
+        <p><strong>College:</strong> @Model.College?.Name</p>
+        <p><strong>Roll Number:</strong> @Model.RollNumber</p>
+
+        <a asp-action="EditProfile" class="btn btn-warning">
+            Edit Profile
+        </a>
+    </div>
+</div>
