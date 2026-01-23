@@ -1,0 +1,32 @@
+@model OnlineExamSystem.Models.Exam
+
+<h2>Edit Exam</h2>
+
+<form action="/Exams/Edit/@Model.Id" method="post">
+
+    <input type="hidden" name="Id" value="@Model.Id" />
+
+    <div class="mb-3">
+        <label>Title</label>
+        <input class="form-control" name="Title" value="@Model.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label>Description</label>
+        <textarea class="form-control" name="Description">@Model.Description</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label>Duration In Minutes</label>
+        <input class="form-control" name="DurationInMinutes" value="@Model.DurationInMinutes" />
+    </div>
+
+    <div class="mb-3">
+        <label>Total Marks</label>
+        <input class="form-control" name="TotalMarks" value="@Model.TotalMarks" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+    <a href="/Exams" class="btn btn-secondary">Cancel</a>
+
+</form>

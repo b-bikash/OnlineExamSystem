@@ -67,12 +67,21 @@ namespace OnlineExamSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(Question question)
+public IActionResult Create(Question question)
+{
+    _context.Questions.Add(question);
+    _context.SaveChanges();
+
+    return RedirectToAction(
+        "Index",
+        new
         {
-            _context.Questions.Add(question);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
+            examId = question.ExamId,
+            attemptId = 0
         }
+    );
+}
+
         public IActionResult SelectAnswer(int questionId, int attemptId)
         {
             var question = _context.Questions
@@ -84,16 +93,31 @@ namespace OnlineExamSystem.Controllers
             return View(question);
         }
         [HttpPost]
-        public IActionResult SelectAnswer(Answer answer)
-        {
-            _context.Answers.Add(answer);
-            _context.SaveChanges();
+public IActionResult SelectAnswer(int questionId, int attemptId, string selectedAnswer)
+{
+    var answer = new Answer
+    {
+        QuestionId = questionId,
+        ExamAttemptId = attemptId,
+        SelectedAnswer = selectedAnswer
+    };
 
-            return RedirectToAction(
-                "Index",
-                new { examId = answer.Question.ExamId, attemptId = answer.ExamAttemptId }
-            );
-        }
+    _context.Answers.Add(answer);
+    _context.SaveChanges();
+
+    var examId = _context.Questions
+        .Where(q => q.Id == questionId)
+        .Select(q => q.ExamId)
+        .First();
+
+    return RedirectToAction(
+        "Index",
+        new { examId = examId, attemptId = attemptId }
+    );
+}
+
+
+
 
 
     }

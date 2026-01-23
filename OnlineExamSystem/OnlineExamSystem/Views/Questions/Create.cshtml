@@ -1,23 +1,41 @@
 ﻿@model OnlineExamSystem.Models.Question
 
+@{
+    ViewData["Title"] = "Create Question";
+    Layout = "_Layout";
+}
+
 <h2>Create Question</h2>
 
-<form method="post">
-    <div>
-        <label>Question Text</label><br />
-        <input type="text" name="Text" />
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <!-- Question Text -->
+    <div class="form-group">
+        <label asp-for="Text"></label>
+        <input asp-for="Text" class="form-control" />
+        <span asp-validation-for="Text" class="text-danger"></span>
     </div>
 
     <br />
 
-    <div>
-        <label>Exam Id</label><br />
+    <!-- Exam Selection -->
+    <div class="form-group">
+        <label asp-for="ExamId">Exam</label>
         <select asp-for="ExamId"
+                class="form-control"
                 asp-items="@(new SelectList(ViewBag.Exams, "Id", "Title"))">
+            <option value="">-- Select Exam --</option>
         </select>
+        <span asp-validation-for="ExamId" class="text-danger"></span>
     </div>
 
     <br />
 
-    <button type="submit">Save</button>
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
