@@ -14,7 +14,7 @@
 
     <div class="row mt-4">
 
-        @* ADMIN *@
+        @* ================= ADMIN ================= *@
         @if (role == "Admin")
         {
             <div class="col-md-4 mb-4">
@@ -31,10 +31,7 @@
                     </div>
                 </div>
             </div>
-        }
 
-        @if (role == "Admin")
-        {
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
@@ -49,10 +46,7 @@
                     </div>
                 </div>
             </div>
-        }
 
-        @if (role == "Admin")
-        {
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
@@ -67,10 +61,7 @@
                     </div>
                 </div>
             </div>
-        }
 
-        @if (role == "Admin")
-        {
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
@@ -85,10 +76,24 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Exam Management</h5>
+                        <p class="card-text text-muted">
+                            View and manage all exams.
+                        </p>
+                        <a asp-controller="Exams" asp-action="Index"
+                           class="btn btn-success btn-sm">
+                            Manage Exams
+                        </a>
+                    </div>
+                </div>
+            </div>
         }
 
-
-        @* TEACHER *@
+        @* ================= TEACHER ================= *@
         @if (role == "Teacher")
         {
             <div class="col-md-4 mb-4">
@@ -105,9 +110,25 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ✅ NEW: TEACHER PROFILE -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">My Profile</h5>
+                        <p class="card-text text-muted">
+                            Update your personal details.
+                        </p>
+                        <a asp-controller="Teachers" asp-action="Profile"
+                           class="btn btn-warning btn-sm">
+                            Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
         }
 
-        @* STUDENT *@
+        @* ================= STUDENT ================= *@
         @if (role == "Student")
         {
             <div class="col-md-4 mb-4">
@@ -117,9 +138,9 @@
                         <p class="card-text text-muted">
                             Attempt available exams.
                         </p>
-                        <a asp-controller="Exams" asp-action="Available"
+                        <a asp-controller="Exams" asp-action="Index"
                            class="btn btn-warning btn-sm">
-                            Start Exam
+                            View Exams
                         </a>
                     </div>
                 </div>

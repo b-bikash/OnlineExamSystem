@@ -1,0 +1,54 @@
+﻿@model IEnumerable<OnlineExamSystem.Models.ExamAttempt>
+
+@{
+    ViewData["Title"] = "Exam Results";
+}
+
+<h2>Exam Results</h2>
+
+<p>
+    <strong>Exam:</strong> @ViewBag.ExamTitle
+</p>
+
+<hr />
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No students have submitted this exam yet.
+    </div>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Student Name</th>
+                <th>Roll Number</th>
+                <th>Score</th>
+                <th>Submitted At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                var sn = 1;
+            }
+            @foreach (var attempt in Model)
+            {
+                <tr>
+                    <td>@sn</td>
+                    <td>@attempt.Student?.Name</td>
+                    <td>@attempt.Student?.RollNumber</td>
+                    <td>@attempt.Score</td>
+                    <td>@attempt.EndTime</td>
+                </tr>
+                sn++;
+            }
+        </tbody>
+    </table>
+}
+
+<a asp-action="Index" asp-controller="Exams" class="btn btn-secondary">
+    Back to Exams
+</a>

@@ -2,7 +2,7 @@
 
 namespace OnlineExamSystem.Models
 {
-    public class Answer
+    public class Option
     {
         public int Id { get; set; }
 
@@ -11,12 +11,9 @@ namespace OnlineExamSystem.Models
         public Question Question { get; set; }
 
         [Required]
-        public int ExamAttemptId { get; set; }
-        public ExamAttempt ExamAttempt { get; set; }
+        [MaxLength(500)]
+        public string Text { get; set; }
 
-        // A / B / C / D selected by student
-        [Required]
-        [MaxLength(1)]
-        public string SelectedAnswer { get; set; }
+        public bool IsCorrect { get; set; }
     }
 }

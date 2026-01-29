@@ -3,12 +3,13 @@
 <h2>Edit Exam</h2>
 
 <form action="/Exams/Edit/@Model.Id" method="post">
+    @Html.AntiForgeryToken()
 
     <input type="hidden" name="Id" value="@Model.Id" />
 
     <div class="mb-3">
         <label>Title</label>
-        <input class="form-control" name="Title" value="@Model.Title" />
+        <input class="form-control" name="Title" value="@Model.Title" required />
     </div>
 
     <div class="mb-3">
@@ -18,15 +19,17 @@
 
     <div class="mb-3">
         <label>Duration In Minutes</label>
-        <input class="form-control" name="DurationInMinutes" value="@Model.DurationInMinutes" />
+        <input class="form-control"
+               name="DurationInMinutes"
+               type="number"
+               min="1"
+               value="@Model.DurationInMinutes"
+               required />
     </div>
 
-    <div class="mb-3">
-        <label>Total Marks</label>
-        <input class="form-control" name="TotalMarks" value="@Model.TotalMarks" />
-    </div>
+    @* TotalMarks intentionally removed
+       This is now system-calculated from question marks *@
 
     <button type="submit" class="btn btn-primary">Update</button>
     <a href="/Exams" class="btn btn-secondary">Cancel</a>
-
 </form>

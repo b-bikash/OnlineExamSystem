@@ -20,5 +20,10 @@ namespace OnlineExamSystem.Models
         public Question Question { get; set; }
 
         public List<Question> Questions { get; set; }
+
+        // NEW (STEP 9)
+        public List<Option> Options { get; set; }
+
+        public int? SelectedOptionId { get; set; }
     }
 }

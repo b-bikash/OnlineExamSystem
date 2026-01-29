@@ -39,13 +39,19 @@
         margin-right: 20px;
     }
 
-    .question-nav button {
+    /* 🔹 Anchor styled as button (Option 1 – recommended) */
+    .nav-btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
         width: 45px;
         height: 45px;
         margin: 5px;
-        border: none;
         border-radius: 5px;
         background-color: #d1d5db;
+        color: black;
+        text-decoration: none;
+        font-weight: bold;
         cursor: pointer;
     }
 
@@ -59,25 +65,38 @@
     .options label {
         display: block;
         margin: 10px 0;
+        cursor: pointer;
     }
 
     .actions {
         margin-top: 20px;
         display: flex;
         justify-content: space-between;
+        align-items: center;
     }
 
-    .actions button {
+    /* 🔹 Shared button-link style */
+    .btn-link {
         padding: 10px 20px;
+        border-radius: 5px;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .previous {
+        background-color: #6b7280;
+    }
+
+    .save {
+        background-color: #2563eb;
         border: none;
+        color: white;
+        padding: 10px 20px;
         border-radius: 5px;
         cursor: pointer;
-        color: white;
     }
-
-    .previous { background-color: #6b7280; }
-    .review   { background-color: #f59e0b; }
-    .save     { background-color: #2563eb; }
 
     .submit {
         background-color: #dc2626;
@@ -87,94 +106,139 @@
         border-radius: 5px;
         color: white;
         border: none;
+        cursor: pointer;
     }
 </style>
 
-<!-- ================= HEADER ================= -->
 <div class="exam-header">
     <div>📘 @Model.ExamTitle</div>
     <div>⏱ Duration: @Model.DurationInMinutes minutes</div>
     <div>Logout 🔒</div>
 </div>
 
-<!-- ================= STUDENT INFO ================= -->
 <div class="student-info">
-    Student ID: 1 | Attempt ID: @Model.AttemptId
+    Attempt ID: @Model.AttemptId
 </div>
 
-<!-- ================= MAIN CONTENT ================= -->
 <div class="exam-container">
 
-    <!-- Question Navigation -->
+    <!-- QUESTION NAVIGATION -->
     <div class="question-nav">
         <h4>Questions</h4>
 
         @for (int i = 0; i < Model.Questions.Count; i++)
         {
+            <!-- ✅ Anchor styled as button (NO nested button) -->
             <a asp-action="Attempt"
                asp-route-attemptId="@Model.AttemptId"
-               asp-route-questionIndex="@i">
-                <button type="button">@(i + 1)</button>
+               asp-route-questionIndex="@i"
+               class="nav-btn">
+                @(i + 1)
             </a>
         }
     </div>
 
-    <!-- Question Area -->
+    <!-- QUESTION AREA -->
     <div class="question-area">
         <h3>Question @(Model.CurrentQuestionIndex + 1)</h3>
 
         <p>@Model.Question.Text</p>
 
-        <!-- ANSWER FORM -->
-        <form method="post">
-            <input type="hidden" name="questionId" value="@Model.Question.Id" />
+        <!-- SAVE ANSWER FORM -->
+        <form asp-action="SaveAnswer" method="post">
             <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+            <input type="hidden" name="questionId" value="@Model.Question.Id" />
+            <input type="hidden" name="questionIndex" value="@Model.CurrentQuestionIndex" />
 
             <div class="options">
-                <label>
-                    <input type="radio" name="selectedAnswer" value="A" /> Option A
-                </label>
-
-                <label>
-                    <input type="radio" name="selectedAnswer" value="B" /> Option B
-                </label>
-
-                <label>
-                    <input type="radio" name="selectedAnswer" value="C" /> Option C
-                </label>
-
-                <label>
-                    <input type="radio" name="selectedAnswer" value="D" /> Option D
-                </label>
+                @foreach (var option in Model.Options)
+                {
+                    <label>
+                        <input type="radio"
+                               name="selectedOptionId"
+                               value="@option.Id"
+                               @(Model.SelectedOptionId == option.Id ? "checked" : "") />
+                        @option.Text
+                    </label>
+                }
             </div>
 
             <div class="actions">
                 @if (Model.CurrentQuestionIndex > 0)
                 {
+                    <!-- ✅ Previous navigation as anchor -->
                     <a asp-action="Attempt"
                        asp-route-attemptId="@Model.AttemptId"
-                       asp-route-questionIndex="@(Model.CurrentQuestionIndex - 1)">
-                        <button type="button" class="previous">Previous</button>
+                       asp-route-questionIndex="@(Model.CurrentQuestionIndex - 1)"
+                       class="btn-link previous">
+                        Previous
                     </a>
                 }
 
-                <button type="button" class="review">Mark for Review</button>
+                <!-- Save button stays a real submit button -->
+                <button type="submit" class="save">Save</button>
 
                 @if (Model.CurrentQuestionIndex < Model.TotalQuestions - 1)
                 {
+                    <!-- ✅ Next navigation as anchor -->
                     <a asp-action="Attempt"
                        asp-route-attemptId="@Model.AttemptId"
-                       asp-route-questionIndex="@(Model.CurrentQuestionIndex + 1)">
-                        <button type="button" class="save">Save & Next</button>
+                       asp-route-questionIndex="@(Model.CurrentQuestionIndex + 1)"
+                       class="btn-link save">
+                        Next
                     </a>
                 }
             </div>
         </form>
 
         <!-- SUBMIT EXAM -->
-        <form asp-action="Submit" method="post">
+        <form method="post"
+              action="/ExamAttempts/Submit"
+              onsubmit="return confirmSubmit();">
+
+            @Html.AntiForgeryToken()
+
             <input type="hidden" name="attemptId" value="@Model.AttemptId" />
-            <button type="submit" class="submit">Submit Exam</button>
+
+            <button type="submit" class="submit">
+                Submit Exam
+            </button>
         </form>
+
     </div>
 </div>
+
+<script>
+    function confirmSubmit() {
+        const totalQuestions = @Model.TotalQuestions;
+        const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+
+        if (answeredQuestions < totalQuestions) {
+            return confirm(
+                "You have not answered all the questions.\n\nAre you sure you want to submit?"
+            );
+        }
+
+        return true;
+    }
+</script>
+
+@*@<script>
+    function submitExam() {
+        const selectedOption = document.querySelector('input[name="selectedOptionId"]:checked');
+
+        if (selectedOption) {
+            // Auto-save current answer first
+            const form = document.querySelector('form[action*="SaveAnswer"]');
+            form.submit();
+            return;
+        }
+
+        // If no option selected
+        if (!confirm("You have not answered all the questions.\n\nAre you sure you want to submit?")) {
+            return;
+        }
+
+        document.querySelector('form[action*="Submit"]').submit();
+    }
+</script>*@

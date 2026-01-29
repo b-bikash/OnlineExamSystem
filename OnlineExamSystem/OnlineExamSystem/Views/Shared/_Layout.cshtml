@@ -61,16 +61,6 @@
                             </a>
                         </li>
 
-                        @* ADMIN 
-                        @if (Context.Session.GetString("Role") == "Admin")
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Users" asp-action="Index">
-                                    Users
-                                </a>
-                            </li>
-                        }*@
-
                         @* TEACHER *@
                         @if (Context.Session.GetString("Role") == "Teacher")
                         {
@@ -90,7 +80,6 @@
                                 </a>
                             </li>
 
-                            <!-- 🔹 NEW: Student Profile Link -->
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Students" asp-action="Profile">
                                     My Profile
@@ -114,7 +103,6 @@
                             </a>
                         </li>
                     }
-
                     else
                     {
                         <li class="nav-item">
@@ -127,6 +115,49 @@
             </div>
         </div>
     </nav>
+
+    <!-- ================= BREADCRUMB BAR ================= -->
+    @if (ViewBag.Breadcrumbs != null)
+    {
+        <nav aria-label="breadcrumb" class="bg-light border-bottom">
+            <ol class="breadcrumb container py-2 mb-0">
+                @foreach (var crumb in ViewBag.Breadcrumbs)
+                {
+                    if (crumb.IsActive)
+                    {
+                        <li class="breadcrumb-item active" aria-current="page">
+                            @crumb.Text
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="breadcrumb-item">
+                            <a href="@crumb.Url">@crumb.Text</a>
+                        </li>
+                    }
+                }
+            </ol>
+        </nav>
+    }
+
+    <!-- ================= GLOBAL MESSAGES ================= -->
+    <div class="container mt-3">
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+    </div>
 
     <!-- MAIN CONTENT -->
     <main class="container">

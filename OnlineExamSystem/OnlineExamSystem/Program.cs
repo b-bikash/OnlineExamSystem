@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
+using OnlineExamSystem.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,34 @@ builder.Services.AddSession();
 
 var app = builder.Build();
 
+// =====================================================
+// 🔐 ADMIN SEEDING (HASH-AWARE, SAFE)
+// =====================================================
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    // Ensure DB exists (dev-safe)
+    context.Database.EnsureCreated();
+
+    // Seed Admin only if none exists
+    if (!context.Users.Any(u => u.Role == "Admin"))
+    {
+        var adminPassword = "Admin@123";
+
+        context.Users.Add(new User
+        {
+            Username = "admin",
+            Email = "admin@exam.com",
+            PasswordHash = PasswordHelper.HashPassword(adminPassword),
+            Role = "Admin",
+            IsActive = true
+        });
+
+        context.SaveChanges();
+    }
+}
+
 // ---------------- PIPELINE ----------------
 
 if (!app.Environment.IsDevelopment())
@@ -50,6 +79,5 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 
 app.Run();

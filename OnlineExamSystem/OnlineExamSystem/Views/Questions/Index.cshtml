@@ -1,30 +1,59 @@
 ﻿@model IEnumerable<OnlineExamSystem.Models.Question>
 
+@{
+    ViewData["Title"] = "Questions";
+    var examTitle = Model.FirstOrDefault()?.Exam?.Title;
+    var serialNo = 1;
+}
+
 <h2>Questions</h2>
 
-<p><strong>Attempt Id:</strong> @ViewBag.AttemptId</p>
+@if (!string.IsNullOrEmpty(examTitle))
+{
+    <h5 class="text-muted mb-3">
+        Exam: <strong>@examTitle</strong>
+    </h5>
+}
 
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Id</th>
-        <th>Text</th>
-        <th>Exam</th>
-        <th>Action</th>
-    </tr>
+<a asp-action="Create"
+   asp-route-examId="@ViewBag.ExamId"
+   class="btn btn-primary mb-3">
+    Add Question
+</a>
 
-    @foreach (var q in Model)
-    {
+<table class="table table-bordered table-striped">
+    <thead>
         <tr>
-            <td>@q.Id</td>
-            <td>@q.Text</td>
-            <td>@q.Exam.Title</td>
-            <td>
-                <form asp-controller="Questions" asp-action="SelectAnswer" method="get">
-                    <input type="hidden" name="questionId" value="@q.Id" />
-                    <input type="hidden" name="attemptId" value="@ViewBag.AttemptId" />
-                    <button type="submit">Select Answer</button>
-                </form>
-            </td>
+            <th style="width: 80px;">S.No</th>
+            <th>Question</th>
+            <th style="width: 100px;">Marks</th>
+            <th style="width: 160px;">Actions</th>
         </tr>
-    }
+    </thead>
+
+    <tbody>
+        @foreach (var q in Model)
+        {
+            <tr>
+                <td>@serialNo</td>
+                <td>@q.Text</td>
+                <td>@q.Marks</td>
+                <td>
+                    <a asp-action="Edit"
+                       asp-route-id="@q.Id"
+                       class="btn btn-sm btn-warning">
+                        Edit
+                    </a>
+
+                    <a asp-action="Delete"
+                       asp-route-id="@q.Id"
+                       class="btn btn-sm btn-danger ms-1">
+                        Delete
+                    </a>
+                </td>
+            </tr>
+
+            serialNo++;
+        }
+    </tbody>
 </table>

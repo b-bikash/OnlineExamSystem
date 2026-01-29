@@ -1,4 +1,7 @@
-﻿namespace OnlineExamSystem.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace OnlineExamSystem.Models
 {
     public class ExamAttempt
     {
@@ -14,5 +17,8 @@
         public DateTime? EndTime { get; set; }
 
         public int Score { get; set; }
+
+        // NEW: Answers given by student for this attempt
+        public ICollection<StudentAnswer> StudentAnswers { get; set; }
     }
 }

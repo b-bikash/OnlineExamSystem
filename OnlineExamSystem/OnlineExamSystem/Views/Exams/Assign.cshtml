@@ -1,0 +1,84 @@
+﻿
+@model OnlineExamSystem.Models.Exam
+
+@{
+    ViewData["Title"] = "Assign Exam";
+    var colleges = ViewBag.Colleges as IEnumerable<dynamic>;
+    var courses = ViewBag.Courses as IEnumerable<dynamic>;
+}
+
+<h2>Assign Exam</h2>
+
+<hr />
+
+<form asp-action="Assign" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <div class="mb-3">
+        <label class="form-label">Exam</label>
+        <input type="text" class="form-control" value="@Model.Title" disabled />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">College</label>
+        <select name="collegeId" class="form-control" required>
+            <option value="">-- Select College --</option>
+            @foreach (var college in colleges)
+            {
+                <option value="@college.Id"
+                        selected="@(Model.CollegeId == college.Id)">
+                    @college.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Course</label>
+        <select name="courseId" class="form-control" required>
+            <option value="">-- Select Course --</option>
+            @foreach (var course in courses)
+            {
+                <option value="@course.Id"
+                        selected="@(Model.CourseId == course.Id)">
+                    @course.Name
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Start Date & Time</label>
+        <input type="datetime-local"
+               name="startDateTime"
+               class="form-control"
+               value="@(Model.StartDateTime.HasValue
+                                   ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                                   : "")"
+               required />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">End Date & Time</label>
+        <input type="datetime-local"
+               name="endDateTime"
+               class="form-control"
+               value="@(Model.EndDateTime.HasValue
+                                   ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                                   : "")"
+               required />
+    </div>
+
+    <div class="text-danger">
+        @Html.ValidationSummary()
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Assign Exam
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary ms-2">
+        Cancel
+    </a>
+</form>

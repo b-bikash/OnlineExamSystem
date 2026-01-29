@@ -1,12 +1,13 @@
-﻿@model OnlineExamSystem.Models.Exam
+﻿
+@model OnlineExamSystem.Models.Exam
 
 <h2>Create Exam</h2>
 
 <form action="/Exams/Create" method="post">
-
+    @Html.AntiForgeryToken()
     <div class="mb-3">
         <label>Title</label>
-        <input class="form-control" name="Title" />
+        <input class="form-control" name="Title" required />
     </div>
 
     <div class="mb-3">
@@ -16,13 +17,11 @@
 
     <div class="mb-3">
         <label>Duration In Minutes</label>
-        <input class="form-control" name="DurationInMinutes" />
+        <input class="form-control" name="DurationInMinutes" type="number" min="1" required />
     </div>
 
-    <div class="mb-3">
-        <label>Total Marks</label>
-        <input class="form-control" name="TotalMarks" />
-    </div>
+    @* TotalMarks intentionally removed
+       This is now system-calculated from question marks *@
 
     <button type="submit" class="btn btn-success">Save</button>
     <a href="/Exams" class="btn btn-secondary">Cancel</a>

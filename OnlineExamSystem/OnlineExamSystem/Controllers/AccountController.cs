@@ -99,14 +99,13 @@ namespace OnlineExamSystem.Controllers
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            // ✅ CREATE STUDENT ROW HERE (EMPTY)
+            // ✅ CORRECT NAME HANDLING
             if (user.Role == "Student")
             {
                 var student = new Student
                 {
                     UserId = user.Id,
-                    Name = user.Username
-                    // CourseId, CollegeId, RollNumber = NULL
+                    Name = model.Name
                 };
 
                 _context.Students.Add(student);
@@ -116,7 +115,7 @@ namespace OnlineExamSystem.Controllers
                 var teacher = new Teacher
                 {
                     UserId = user.Id,
-                    Name = user.Username
+                    Name = model.Name
                 };
 
                 _context.Teachers.Add(teacher);

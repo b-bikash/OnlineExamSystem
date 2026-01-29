@@ -1,4 +1,4 @@
-﻿@model OnlineExamSystem.Models.Question
+﻿@model OnlineExamSystem.Models.QuestionCreateViewModel
 
 @{
     ViewData["Title"] = "Create Question";
@@ -10,30 +10,96 @@
 <form asp-action="Create" method="post">
     @Html.AntiForgeryToken()
 
+    <!-- ExamId (fixed, comes from controller) -->
+    <input type="hidden" asp-for="ExamId" />
+
     <!-- Question Text -->
     <div class="form-group">
-        <label asp-for="Text"></label>
-        <input asp-for="Text" class="form-control" />
-        <span asp-validation-for="Text" class="text-danger"></span>
+        <label asp-for="QuestionText">Question</label>
+        <textarea asp-for="QuestionText" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="QuestionText" class="text-danger"></span>
     </div>
 
-    <br />
+    <!-- Marks -->
+    <div class="form-group mt-3">
+        <label>Marks</label>
+        <input type="number"
+               name="Marks"
+               class="form-control"
+               min="0"
+               value="0"
+               required />
+        <small class="text-muted">
+            Enter marks for this question (0 or more).
+        </small>
+    </div>
 
-    <!-- Exam Selection -->
+    <hr />
+
+    <h4>Options</h4>
+    <p class="text-muted">
+        Enter 2 to 4 options and select exactly one correct answer.
+    </p>
+
+    <!-- Option 1 -->
     <div class="form-group">
-        <label asp-for="ExamId">Exam</label>
-        <select asp-for="ExamId"
-                class="form-control"
-                asp-items="@(new SelectList(ViewBag.Exams, "Id", "Title"))">
-            <option value="">-- Select Exam --</option>
-        </select>
-        <span asp-validation-for="ExamId" class="text-danger"></span>
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="CorrectOptionIndex"
+                   value="0" />
+            <label class="form-check-label">Correct</label>
+        </div>
+        <input name="Options[0]" class="form-control" placeholder="Option 1" />
+    </div>
+
+    <!-- Option 2 -->
+    <div class="form-group">
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="CorrectOptionIndex"
+                   value="1" />
+            <label class="form-check-label">Correct</label>
+        </div>
+        <input name="Options[1]" class="form-control" placeholder="Option 2" />
+    </div>
+
+    <!-- Option 3 -->
+    <div class="form-group">
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="CorrectOptionIndex"
+                   value="2" />
+            <label class="form-check-label">Correct</label>
+        </div>
+        <input name="Options[2]" class="form-control" placeholder="Option 3 (optional)" />
+    </div>
+
+    <!-- Option 4 -->
+    <div class="form-group">
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="CorrectOptionIndex"
+                   value="3" />
+            <label class="form-check-label">Correct</label>
+        </div>
+        <input name="Options[3]" class="form-control" placeholder="Option 4 (optional)" />
+    </div>
+
+    <!-- Validation summary for option-related errors -->
+    <div class="text-danger">
+        @Html.ValidationSummary(false)
     </div>
 
     <br />
 
-    <button type="submit" class="btn btn-success">Save</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-success">Save Question</button>
+    <a asp-action="Index" asp-route-examId="@Model.ExamId" class="btn btn-secondary">
+        Cancel
+    </a>
 </form>
 
 @section Scripts {

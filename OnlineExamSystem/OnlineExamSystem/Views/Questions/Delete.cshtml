@@ -12,6 +12,11 @@
 
 <form asp-action="DeleteConfirmed" method="post">
     <input type="hidden" asp-for="Id" />
+
     <button type="submit">Yes, Delete</button>
-    <a asp-action="Index">Cancel</a>
+
+    <a asp-action="Index"
+       asp-route-examId="@Model.ExamId">
+        Cancel
+    </a>
 </form>

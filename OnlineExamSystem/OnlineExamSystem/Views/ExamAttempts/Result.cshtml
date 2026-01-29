@@ -1,0 +1,22 @@
+﻿@model OnlineExamSystem.Models.ExamAttempt
+
+@{
+    ViewData["Title"] = "Exam Result";
+}
+
+<h2>Exam Result</h2>
+
+<hr />
+
+<div>
+    <p><strong>Exam Title:</strong> @Model.Exam.Title</p>
+    <p><strong>Start Time:</strong> @Model.StartTime</p>
+    <p><strong>End Time:</strong> @Model.EndTime</p>
+    <p><strong>Score:</strong> @Model.Score</p>
+</div>
+
+<hr />
+
+<a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+    Back to Home
+</a>

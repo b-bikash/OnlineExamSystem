@@ -18,5 +18,10 @@ namespace OnlineExamSystem.Models
 
         [Required]
         public string Role { get; set; } // Student / Teacher
+
+        // ✅ NEW
+        [Required(ErrorMessage = "Full Name is required")]
+        [MaxLength(150)]
+        public string Name { get; set; }
     }
 }
