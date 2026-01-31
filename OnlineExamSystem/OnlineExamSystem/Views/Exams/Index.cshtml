@@ -7,7 +7,7 @@
     var role = Context.Session.GetString("Role");
     var now = DateTime.Now;
 }
-
+@*
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success">
@@ -21,6 +21,7 @@
         @TempData["ErrorMessage"]
     </div>
 }
+*@
 
 <h2>Exams</h2>
 
@@ -28,110 +29,186 @@
 @if (role == "Student")
 {
     var studentModel = Model as StudentExamsViewModel;
-
-    <h4>Live Exams</h4>
-    <hr />
-
-    @if (!studentModel.LiveExams.Any())
+    
+    @if (!studentModel.IsProfileCompleted)
     {
-        <p>No live exams available.</p>
-    }
-    else
-    {
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Duration (mins)</th>
-                    <th>Ends At</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var exam in studentModel.LiveExams)
-                {
-                    <tr>
-                        <td>@exam.Title</td>
-                        <td>@exam.DurationInMinutes</td>
-                        <td>@exam.EndDateTime</td>
-                        <td>
-                            <a asp-controller="ExamAttempts"
-                               asp-action="Start"
-                               asp-route-examId="@exam.Id"
-                               class="btn btn-sm btn-success">
-                                Start Exam
-                            </a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="alert alert-warning">
+            <strong>Complete your profile to access exams.</strong><br />
+            Please complete your profile first. You will be able to view and attempt exams only after your profile is completed.
+            <br />
+            <a asp-controller="Students" asp-action="Profile" class="alert-link">
+                Complete Profile
+            </a>
+        </div>
     }
 
-    <h4 class="mt-4">Upcoming Exams</h4>
-    <hr />
+    <div class="accordion" id="studentExamAccordion">
 
-    @if (!studentModel.UpcomingExams.Any())
-    {
-        <p>No upcoming exams.</p>
-    }
-    else
-    {
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Starts At</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var exam in studentModel.UpcomingExams)
-                {
-                    <tr>
-                        <td>@exam.Title</td>
-                        <td>@exam.StartDateTime</td>
-                        <td>
-                            <span class="badge bg-secondary">Upcoming</span>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+        <!-- LIVE EXAMS -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#studentLiveExams">
+                    Live Exams
+                </button>
+            </h2>
 
-    <h4 class="mt-4">Attempted Exams</h4>
-    <hr />
+            <div id="studentLiveExams"
+                 class="accordion-collapse collapse show">
+                <div class="accordion-body">
 
-    @if (!studentModel.AttemptedExams.Any())
-    {
-        <p>No attempted exams yet.</p>
-    }
-    else
-    {
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Duration (mins)</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var exam in studentModel.AttemptedExams)
-                {
-                    <tr>
-                        <td>@exam.Title</td>
-                        <td>@exam.DurationInMinutes</td>
-                        <td>
-                            <span class="badge bg-success">Attempted</span>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+                    @if (!studentModel.LiveExams.Any())
+                    {
+                        <p>No live exams available.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Duration (mins)</th>
+                                    <th>Ends At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exam in studentModel.LiveExams)
+                                {
+                                    <tr>
+                                        <td>@exam.Title</td>
+                                        <td>@exam.DurationInMinutes</td>
+                                        <td>@exam.EndDateTime</td>
+                                        <td>
+                                            <a asp-controller="ExamAttempts"
+                                               asp-action="Start"
+                                               asp-route-examId="@exam.Id"
+                                               class="btn btn-sm btn-success">
+                                                Start Exam
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+        <!-- UPCOMING EXAMS -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#studentUpcomingExams">
+                    Upcoming Exams
+                </button>
+            </h2>
+
+            <div id="studentUpcomingExams"
+                 class="accordion-collapse collapse">
+                <div class="accordion-body">
+
+                    @if (!studentModel.UpcomingExams.Any())
+                    {
+                        <p>No upcoming exams.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Starts At</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exam in studentModel.UpcomingExams)
+                                {
+                                    <tr>
+                                        <td>@exam.Title</td>
+                                        <td>@exam.StartDateTime</td>
+                                        <td>
+                                            <span class="badge bg-secondary">Upcoming</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ATTEMPTED EXAMS -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#studentAttemptedExams">
+                    Attempted Exams
+                </button>
+            </h2>
+
+            <div id="studentAttemptedExams"
+                 class="accordion-collapse collapse">
+                <div class="accordion-body">
+
+                    @if (!studentModel.AttemptedExams.Any())
+                    {
+                        <p>No attempted exams yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Total Marks</th>
+                                    <th>Teacher</th>
+                                    <th>Your Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in studentModel.AttemptedExams)
+                                {
+                                    <tr>
+                                        <td>@item.Exam.Title</td>
+                                        <td>@item.Exam.TotalMarks</td>
+                                        <td>@item.TeacherName</td>
+                                        <td>
+                                            @if (item.Exam.EndDateTime.HasValue &&
+                                                                            item.Exam.EndDateTime.Value < DateTime.Now &&
+                                                                            item.Attempt.EndTime.HasValue)
+                                            {
+                                                <span class="fw-bold">@item.Attempt.Score</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Results not declared yet</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+    </div>
 }
+
 
 @* ================= TEACHER VIEW ================= *@
 @if (role == "Teacher")

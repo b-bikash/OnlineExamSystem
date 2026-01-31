@@ -49,7 +49,12 @@ namespace OnlineExamSystem.Controllers
 
         // CREATE (POST)
         [HttpPost]
-        public IActionResult Create(string Username, string Email, string Password, string Role)
+        public IActionResult Create(
+            string FullName,
+            string Username,
+            string Email,
+            string Password,
+            string Role)
         {
             if (HttpContext.Session.GetString("Role") != "Admin")
             {
@@ -73,14 +78,41 @@ namespace OnlineExamSystem.Controllers
                 Username = Username,
                 Email = Email,
                 Role = Role,
-                PasswordHash = PasswordHelper.HashPassword(Password)
+                PasswordHash = PasswordHelper.HashPassword(Password),
+                IsActive = true
             };
 
             _context.Users.Add(user);
             _context.SaveChanges();
 
+            // 🔹 MATCH REGISTER LOGIC
+            if (Role == "Student")
+            {
+                var student = new Student
+                {
+                    UserId = user.Id,
+                    Name = FullName,
+                    IsProfileCompleted = false
+                };
+
+                _context.Students.Add(student);
+            }
+            else if (Role == "Teacher")
+            {
+                var teacher = new Teacher
+                {
+                    UserId = user.Id,
+                    Name = FullName
+                };
+
+                _context.Teachers.Add(teacher);
+            }
+
+            _context.SaveChanges();
+
             return RedirectToAction("Index");
         }
+
 
         // EDIT (GET)
         public IActionResult Edit(int id)
@@ -96,12 +128,29 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index");
             }
 
+            // 🔹 Load Full Name if Student / Teacher
+            if (user.Role == "Student")
+            {
+                var student = _context.Students.FirstOrDefault(s => s.UserId == user.Id);
+                ViewBag.FullName = student?.Name;
+            }
+            else if (user.Role == "Teacher")
+            {
+                var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
+                ViewBag.FullName = teacher?.Name;
+            }
+
             return View(user);
         }
 
         // EDIT (POST)
         [HttpPost]
-        public IActionResult Edit(int id, string Email, string Password, string Role)
+        public IActionResult Edit(
+            int id,
+            string FullName,
+            string Email,
+            string Password,
+            string Role)
         {
             if (HttpContext.Session.GetString("Role") != "Admin")
             {
@@ -126,6 +175,24 @@ namespace OnlineExamSystem.Controllers
             if (!string.IsNullOrWhiteSpace(Password))
             {
                 user.PasswordHash = PasswordHelper.HashPassword(Password);
+            }
+
+            // 🔹 UPDATE FULL NAME
+            if (Role == "Student")
+            {
+                var student = _context.Students.FirstOrDefault(s => s.UserId == user.Id);
+                if (student != null)
+                {
+                    student.Name = FullName;
+                }
+            }
+            else if (Role == "Teacher")
+            {
+                var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
+                if (teacher != null)
+                {
+                    teacher.Name = FullName;
+                }
             }
 
             _context.SaveChanges();

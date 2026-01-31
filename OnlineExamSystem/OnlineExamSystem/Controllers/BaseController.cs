@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Http;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -8,9 +9,18 @@ namespace OnlineExamSystem.Controllers
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             var controllerName = context.RouteData.Values["controller"]?.ToString();
+            var httpMethod = context.HttpContext.Request.Method;
 
-            // Allow AccountController (Login / Logout)
+            // Allow AccountController freely
             if (controllerName == "Account")
+            {
+                base.OnActionExecuting(context);
+                return;
+            }
+
+            // 🔑 IMPORTANT:
+            // Do NOT block POST requests here
+            if (httpMethod == "POST")
             {
                 base.OnActionExecuting(context);
                 return;

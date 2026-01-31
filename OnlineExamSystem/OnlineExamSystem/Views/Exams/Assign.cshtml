@@ -1,14 +1,18 @@
-﻿
-@model OnlineExamSystem.Models.Exam
+﻿@model OnlineExamSystem.Models.Exam
 
 @{
     ViewData["Title"] = "Assign Exam";
+
     var colleges = ViewBag.Colleges as IEnumerable<dynamic>;
     var courses = ViewBag.Courses as IEnumerable<dynamic>;
+
+    // 🔑 MODE DECISION
+    bool isEditMode =
+        !Model.StartDateTime.HasValue ||
+        Context.Request.Query.ContainsKey("edit");
 }
 
 <h2>Assign Exam</h2>
-
 <hr />
 
 <form asp-action="Assign" method="post">
@@ -22,7 +26,9 @@
 
     <div class="mb-3">
         <label class="form-label">College</label>
-        <select name="collegeId" class="form-control" required>
+        <select name="collegeId"
+                class="form-control"
+                @(isEditMode ? "" : "disabled")>
             <option value="">-- Select College --</option>
             @foreach (var college in colleges)
             {
@@ -36,7 +42,9 @@
 
     <div class="mb-3">
         <label class="form-label">Course</label>
-        <select name="courseId" class="form-control" required>
+        <select name="courseId"
+                class="form-control"
+                @(isEditMode ? "" : "disabled")>
             <option value="">-- Select Course --</option>
             @foreach (var course in courses)
             {
@@ -56,7 +64,7 @@
                value="@(Model.StartDateTime.HasValue
                                    ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
                                    : "")"
-               required />
+               @(isEditMode ? "" : "readonly") />
     </div>
 
     <div class="mb-3">
@@ -67,18 +75,34 @@
                value="@(Model.EndDateTime.HasValue
                                    ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
                                    : "")"
-               required />
+               @(isEditMode ? "" : "readonly") />
     </div>
 
     <div class="text-danger">
         @Html.ValidationSummary()
     </div>
 
-    <button type="submit" class="btn btn-primary">
-        Assign Exam
-    </button>
+    @if (isEditMode)
+    {
+        <button type="submit" class="btn btn-primary">
+            @(Model.StartDateTime.HasValue ? "Update Assignment" : "Assign Exam")
+        </button>
 
-    <a asp-action="Index" class="btn btn-secondary ms-2">
-        Cancel
-    </a>
+        <a asp-action="Index" class="btn btn-secondary ms-2">
+            Cancel
+        </a>
+    }
+    else
+    {
+        <a asp-action="Assign"
+           asp-route-id="@Model.Id"
+           asp-route-edit="true"
+           class="btn btn-warning">
+            Edit Assignment
+        </a>
+
+        <a asp-action="Index" class="btn btn-secondary ms-2">
+            Back
+        </a>
+    }
 </form>

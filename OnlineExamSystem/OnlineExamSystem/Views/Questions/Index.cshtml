@@ -6,21 +6,50 @@
     var serialNo = 1;
 }
 
-<h2>Questions</h2>
+<!-- ================= BREADCRUMB ================= -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a asp-controller="Exams" asp-action="Index">Exams</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            Questions
+        </li>
+    </ol>
+</nav>
 
-@if (!string.IsNullOrEmpty(examTitle))
-{
-    <h5 class="text-muted mb-3">
-        Exam: <strong>@examTitle</strong>
-    </h5>
-}
+<!-- ================= PAGE HEADER ================= -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0">Questions</h2>
 
-<a asp-action="Create"
-   asp-route-examId="@ViewBag.ExamId"
-   class="btn btn-primary mb-3">
-    Add Question
-</a>
+        @if (!string.IsNullOrEmpty(examTitle))
+        {
+            <small class="text-muted">
+                Exam: <strong>@examTitle</strong>
+            </small>
+        }
+    </div>
 
+    <div>
+        <a asp-controller="Exams"
+           asp-action="Index"
+           class="btn btn-outline-secondary me-2">
+            ← Back to Exams
+        </a>
+
+        <a asp-action="Create"
+           asp-route-examId="@ViewBag.ExamId"
+           class="btn btn-primary">
+            Add Question
+        </a>
+    </div>
+</div>
+
+<!-- ================= QUESTIONS TABLE ================= -->
 <table class="table table-bordered table-striped">
     <thead>
         <tr>

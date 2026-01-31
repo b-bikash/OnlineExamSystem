@@ -1,15 +1,21 @@
 ﻿@{
     ViewData["Title"] = "Dashboard";
 
-    var username = Context.Session.GetString("Username");
     var role = Context.Session.GetString("Role");
+
+    var fullName = Context.Session.GetString("FullName");
+    var username = Context.Session.GetString("Username");
+
+    var displayName = !string.IsNullOrWhiteSpace(fullName)
+        ? fullName
+        : username;
 }
 
 <div class="mt-4">
     <h2 class="mb-3">Dashboard</h2>
 
     <p class="text-muted">
-        Welcome, <strong>@username</strong>
+        Welcome, <strong>@displayName</strong>
     </p>
 
     <div class="row mt-4">
@@ -129,6 +135,23 @@
         }
 
         @* ================= STUDENT ================= *@
+        @if (Context.Session.GetString("Role") == "Student")
+        {
+            var student = ViewBag.Student as OnlineExamSystem.Models.Student;
+
+            if (student != null && !student.IsProfileCompleted)
+            {
+                <div class="alert alert-warning">
+                    <strong>Welcome!</strong><br />
+                    Please complete your profile to start attempting exams.
+                    <br />
+                    <a asp-controller="Students" asp-action="Profile" class="alert-link">
+                        Complete Profile
+                    </a>
+                </div>
+            }
+        }
+
         @if (role == "Student")
         {
             <div class="col-md-4 mb-4">

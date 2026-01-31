@@ -2,24 +2,57 @@
     ViewData["Title"] = "Login";
 }
 
-<h2>Login</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="card shadow-sm border-0" style="width: 380px;">
+        <div class="card-body p-4">
 
-@if (ViewBag.Error != null)
-{
-    <p style="color:red">@ViewBag.Error</p>
-}
+            <h3 class="text-center mb-4">Login</h3>
 
-<form method="post">
-    <div>
-        <label>Email or Username</label><br />
-        <input type="text" name="usernameOrEmail" />
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger text-center">
+                    @ViewBag.Error
+                </div>
+            }
+
+            <form method="post">
+
+                <div class="mb-3">
+                    <label class="form-label">Email or Username</label>
+                    <input type="text"
+                           name="usernameOrEmail"
+                           class="form-control"
+                           placeholder="Enter email or username"
+                           required
+                           autofocus />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Password</label>
+                    <input type="password"
+                           name="password"
+                           class="form-control"
+                           placeholder="Enter password"
+                           required />
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        Login
+                    </button>
+                </div>
+
+                <div class="text-center mt-3">
+                    <span class="text-muted">New user?</span>
+                    <a asp-controller="Account"
+                       asp-action="Register"
+                       class="text-decoration-none fw-semibold">
+                        Register here
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
     </div>
-
-    <div>
-        <label>Password</label><br />
-        <input type="password" name="password" />
-    </div>
-
-    <br />
-    <button type="submit">Login</button>
-</form>
+</div>

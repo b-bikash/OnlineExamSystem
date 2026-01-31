@@ -50,6 +50,27 @@ namespace OnlineExamSystem.Controllers
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("Role", user.Role);
 
+            string fullName = user.Username; // fallback
+
+            if (user.Role == "Student")
+            {
+                var student = _context.Students
+                    .FirstOrDefault(s => s.UserId == user.Id);
+
+                if (student != null)
+                    fullName = student.Name;
+            }
+            else if (user.Role == "Teacher")
+            {
+                var teacher = _context.Teachers
+                    .FirstOrDefault(t => t.UserId == user.Id);
+
+                if (teacher != null)
+                    fullName = teacher.Name;
+            }
+
+            HttpContext.Session.SetString("FullName", fullName);
+
             return RedirectToAction("Index", "Dashboard");
         }
 

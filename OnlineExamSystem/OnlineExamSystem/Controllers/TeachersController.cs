@@ -49,7 +49,8 @@ namespace OnlineExamSystem.Controllers
         // POST: Teacher Profile
         // =========================
         [HttpPost]
-        public IActionResult Profile(Teacher model, string username, string email)
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateProfile(string name, string username, string email)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -67,7 +68,7 @@ namespace OnlineExamSystem.Controllers
             if (teacher == null)
                 return NotFound();
 
-            // 🔒 Username uniqueness check
+            // Username uniqueness
             bool usernameExists = _context.Users.Any(u =>
                 u.Username == username &&
                 u.Id != user.Id
@@ -75,13 +76,10 @@ namespace OnlineExamSystem.Controllers
 
             if (usernameExists)
             {
-                ModelState.AddModelError(
-                    "Username",
-                    "Username already exists."
-                );
+                ModelState.AddModelError("Username", "Username already exists.");
             }
 
-            // 🔒 Email uniqueness check
+            // Email uniqueness
             bool emailExists = _context.Users.Any(u =>
                 u.Email == email &&
                 u.Id != user.Id
@@ -89,21 +87,20 @@ namespace OnlineExamSystem.Controllers
 
             if (emailExists)
             {
-                ModelState.AddModelError(
-                    "Email",
-                    "Email already exists."
-                );
+                ModelState.AddModelError("Email", "Email already exists.");
             }
 
             if (!ModelState.IsValid)
             {
                 ViewBag.Username = username;
                 ViewBag.Email = email;
-                return View(model);
+
+                // Re-render Profile view safely
+                return View("Profile", teacher);
             }
 
             // ✅ SAVE
-            teacher.Name = model.Name;
+            teacher.Name = name;
             user.Username = username;
             user.Email = email;
 
@@ -113,5 +110,6 @@ namespace OnlineExamSystem.Controllers
 
             return RedirectToAction("Profile");
         }
+
     }
 }

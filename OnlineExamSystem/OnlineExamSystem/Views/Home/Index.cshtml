@@ -3,37 +3,117 @@
 }
 
 <div class="container mt-5">
+
+    <!-- HEADER -->
     <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
+        <div class="col-md-10 col-lg-8 text-center">
 
             <h1 class="display-5 fw-bold mb-3">
-                Online Examination System
+                B&amp;B ExamVerse
             </h1>
 
-            <p class="lead text-muted">
-                A secure and user-friendly platform to conduct online exams for students
-                and manage examinations efficiently for teachers and administrators.
+            <p class="lead text-muted mb-4">
+                A reliable and user-friendly online examination platform for students,
+                teachers, and administrators.
             </p>
 
-            <hr class="my-4" />
-
-            <p class="text-muted">
-                Students can register to attempt available exams, while teachers can
-                create and manage exams with ease.
+            <p class="text-muted mb-5">
+                B&amp;B ExamVerse simplifies the entire examination lifecycle —
+                from exam creation and assignment to secure attempts, evaluation,
+                and result management — all in one integrated system.
             </p>
 
-            <div class="d-flex justify-content-center gap-3 mt-4">
-                <a asp-controller="Account" asp-action="Login"
-                   class="btn btn-primary btn-lg px-4">
+            <!-- PRIMARY ACTIONS (INTENTIONAL PLACEMENT) -->
+            <div class="d-flex justify-content-center gap-3 mb-5">
+                <a asp-controller="Account"
+                   asp-action="Login"
+                   class="btn btn-primary btn-lg px-5">
                     Login
                 </a>
 
-                <a asp-controller="Account" asp-action="Register"
-                   class="btn btn-outline-secondary btn-lg px-4">
+                <a asp-controller="Account"
+                   asp-action="Register"
+                   class="btn btn-outline-secondary btn-lg px-5">
                     Register
                 </a>
             </div>
 
+            <!-- SUBTLE DIVIDER -->
+            <div class="d-flex justify-content-center mb-4">
+                <div style="
+                        width: 80px;
+                        height: 1px;
+                        background-color: rgba(0, 0, 0, 0.1);
+                        ">
+                </div>
+            </div>
+
         </div>
     </div>
+
+    <!-- FEATURE CARDS -->
+    <div class="row g-4 mt-2">
+
+        <!-- STUDENT -->
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm feature-card">
+                <div class="card-body p-4 text-center">
+                    <h5 class="fw-semibold mb-3">For Students</h5>
+                    <p class="text-muted mb-0">
+                        Register, complete your profile, view assigned exams,
+                        attempt exams within the given time window,
+                        and view results once the exam is completed.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEACHER -->
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm feature-card">
+                <div class="card-body p-4 text-center">
+                    <h5 class="fw-semibold mb-3">For Teachers</h5>
+                    <p class="text-muted mb-0">
+                        Create exams, add and manage questions,
+                        assign exams to students, monitor exam progress,
+                        and review student performance through results.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN -->
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm feature-card">
+                <div class="card-body p-4 text-center">
+                    <h5 class="fw-semibold mb-3">For Administrators</h5>
+                    <p class="text-muted mb-0">
+                        Manage users, colleges, and courses,
+                        oversee the entire system, ensure data integrity,
+                        and maintain smooth operation of the platform.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 </div>
+
+<!-- SUBTLE UI POLISH -->
+<style>
+    .feature-card {
+        transition: all 0.25s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.08);
+        }
+
+        /* Slightly tighter card text */
+        .feature-card p {
+            line-height: 1.45;
+        }
+</style>
+

@@ -74,11 +74,13 @@
                         @* STUDENT *@
                         @if (Context.Session.GetString("Role") == "Student")
                         {
+                            @*
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Exams" asp-action="Available">
                                     Available Exams
                                 </a>
                             </li>
+                            *@
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Students" asp-action="Profile">
@@ -92,23 +94,42 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     @if (Context.Session.GetString("UserId") != null)
                     {
-                        <li class="nav-item me-3">
-                            <span class="nav-link text-light p-0">
-                                @Context.Session.GetString("Username")
+                        <div class="d-flex align-items-center gap-3">
+                        
+                         <li class="nav-item me-3">
+                            
+                            <span class="text-light small">
+                                Welcome,
+                                <strong>@Context.Session.GetString("Username")</strong>
                             </span>
+
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-danger p-0" asp-controller="Account" asp-action="Logout">
+                            <a asp-controller="Account"
+                               asp-action="Logout"
+                               class="btn btn-outline-light btn-sm px-3">
                                 Logout
                             </a>
                         </li>
+                        </div>
                     }
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Account" asp-action="Login">
-                                Login
-                            </a>
+                            <div class="d-flex align-items-center gap-2">
+                                <a asp-controller="Account"
+                                   asp-action="Login"
+                                   class="btn btn-outline-light btn-sm px-3">
+                                    Login
+                                </a>
+
+                                <a asp-controller="Account"
+                                   asp-action="Register"
+                                   class="btn btn-primary btn-sm px-3">
+                                    Register
+                                </a>
+                            </div>
+
                         </li>
                     }
                 </ul>
@@ -117,7 +138,7 @@
     </nav>
 
     <!-- ================= BREADCRUMB BAR ================= -->
-    @if (ViewBag.Breadcrumbs != null)
+    @*@if (ViewBag.Breadcrumbs != null)
     {
         <nav aria-label="breadcrumb" class="bg-light border-bottom">
             <ol class="breadcrumb container py-2 mb-0">
@@ -138,7 +159,8 @@
                 }
             </ol>
         </nav>
-    }
+    }*@
+    
 
     <!-- ================= GLOBAL MESSAGES ================= -->
     <div class="container mt-3">
@@ -162,6 +184,12 @@
     <!-- MAIN CONTENT -->
     <main class="container">
         @RenderBody()
+        <footer class="mt-5">
+            <div class="text-center text-muted py-3" style="font-size: 0.9rem;">
+                © 2026 <strong>B&amp;B ExamVerse</strong>. All rights reserved.
+            </div>
+        </footer>
+
     </main>
 
     <!-- Bootstrap JS -->

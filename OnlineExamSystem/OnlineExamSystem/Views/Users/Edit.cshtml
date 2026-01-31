@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Edit User";
+    var fullName = ViewBag.FullName as string;
 }
 
 <h2 class="mb-4">Edit User</h2>
@@ -20,6 +21,25 @@
 
             <input type="hidden" name="id" value="@Model.Id" />
 
+            <!-- ROLE FIRST -->
+            <div class="mb-3">
+                <label class="form-label">Role</label>
+                <select name="Role" id="roleSelect" class="form-select" required>
+                    <option value="Admin" selected="@(Model.Role == "Admin")">Admin</option>
+                    <option value="Teacher" selected="@(Model.Role == "Teacher")">Teacher</option>
+                    <option value="Student" selected="@(Model.Role == "Student")">Student</option>
+                </select>
+            </div>
+
+            <!-- FULL NAME (STUDENT / TEACHER ONLY) -->
+            <div class="mb-3" id="fullNameWrapper">
+                <label class="form-label">Full Name</label>
+                <input name="FullName"
+                       id="fullNameInput"
+                       class="form-control"
+                       value="@fullName" />
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Username</label>
                 <input class="form-control" value="@Model.Username" disabled />
@@ -27,23 +47,17 @@
 
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input name="Email" type="email"
+                <input name="Email"
+                       type="email"
                        class="form-control"
-                       value="@Model.Email" required />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Role</label>
-                <select name="Role" class="form-select" required>
-                    <option value="Admin" selected="@(Model.Role == "Admin")">Admin</option>
-                    <option value="Teacher" selected="@(Model.Role == "Teacher")">Teacher</option>
-                    <option value="Student" selected="@(Model.Role == "Student")">Student</option>
-                </select>
+                       value="@Model.Email"
+                       required />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">New Password (optional)</label>
-                <input name="Password" type="password"
+                <input name="Password"
+                       type="password"
                        class="form-control"
                        placeholder="Leave blank to keep current password" />
             </div>
@@ -59,3 +73,25 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        const roleSelect = document.getElementById("roleSelect");
+        const fullNameWrapper = document.getElementById("fullNameWrapper");
+        const fullNameInput = document.getElementById("fullNameInput");
+
+        function toggleFullName() {
+            if (roleSelect.value === "Admin") {
+                fullNameWrapper.style.display = "none";
+                fullNameInput.value = "";
+                fullNameInput.removeAttribute("required");
+            } else {
+                fullNameWrapper.style.display = "block";
+                fullNameInput.setAttribute("required", "required");
+            }
+        }
+
+        roleSelect.addEventListener("change", toggleFullName);
+        toggleFullName();
+    </script>
+}

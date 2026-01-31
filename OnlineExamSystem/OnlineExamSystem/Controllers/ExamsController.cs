@@ -72,25 +72,60 @@ namespace OnlineExamSystem.Controllers
                         e.CollegeId == student.CollegeId &&
                         e.CourseId == student.CourseId
                     )
+                    .OrderByDescending(e => e.EndDateTime) // default recent-first
                     .ToList();
 
-                var attemptedExamIds = _context.ExamAttempts
+                var attempts = _context.ExamAttempts
                     .AsNoTracking()
                     .Where(a => a.StudentId == student.Id)
-                    .Select(a => a.ExamId)
+                    .Include(a => a.Exam)
                     .ToList();
 
                 var viewModel = new StudentExamsViewModel();
+                viewModel.IsProfileCompleted = student.IsProfileCompleted;
+
 
                 foreach (var exam in assignedExams)
                 {
-                    if (attemptedExamIds.Contains(exam.Id))
-                        viewModel.AttemptedExams.Add(exam);
+                    var attempt = attempts.FirstOrDefault(a => a.ExamId == exam.Id);
+
+                    if (attempt != null)
+                    {
+                        var teacherName = _context.Teachers
+                            .AsNoTracking()
+                            .Where(t => t.UserId == exam.CreatedByTeacherId)
+                            .Select(t => t.Name)
+                            .FirstOrDefault() ?? "—";
+
+                        viewModel.AttemptedExams.Add(new StudentAttemptedExamItem
+                        {
+                            Exam = exam,
+                            Attempt = attempt,
+                            TeacherName = teacherName
+                        });
+                    }
                     else if (now >= exam.StartDateTime && now <= exam.EndDateTime)
+                    {
                         viewModel.LiveExams.Add(exam);
+                    }
                     else if (now < exam.StartDateTime)
+                    {
                         viewModel.UpcomingExams.Add(exam);
+                    }
                 }
+                // ✅ ORDERING — MOST RECENT FIRST
+
+                viewModel.LiveExams = viewModel.LiveExams
+                    .OrderBy(e => e.EndDateTime)
+                    .ToList();
+
+                viewModel.UpcomingExams = viewModel.UpcomingExams
+                    .OrderBy(e => e.StartDateTime)
+                    .ToList();
+
+                viewModel.AttemptedExams = viewModel.AttemptedExams
+                    .OrderByDescending(a => a.Attempt.EndTime)
+                    .ToList();
 
                 return View(viewModel);
             }
@@ -182,6 +217,14 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
+            // ❌ BLOCK EDIT IF EXAM HAS STARTED
+            if (exam.StartDateTime.HasValue &&
+                exam.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be edited.";
+                return RedirectToAction(nameof(Index));
+            }
+
             return View(exam);
         }
 
@@ -199,12 +242,22 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(examFromDb))
                 return Unauthorized();
 
+            // ❌ HARD SAFETY CHECK (DO NOT REMOVE)
+            if (examFromDb.StartDateTime.HasValue &&
+                examFromDb.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be edited.";
+                return RedirectToAction(nameof(Index));
+            }
+
             examFromDb.Title = exam.Title;
             examFromDb.Description = exam.Description;
             examFromDb.DurationInMinutes = exam.DurationInMinutes;
             examFromDb.TotalMarks = exam.TotalMarks;
 
             _context.SaveChanges();
+
+            TempData["SuccessMessage"] = "Exam updated successfully.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -222,6 +275,14 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
+            // ❌ BLOCK DELETE IF EXAM HAS STARTED
+            if (exam.StartDateTime.HasValue &&
+                exam.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be deleted.";
+                return RedirectToAction(nameof(Index));
+            }
+
             return View(exam);
         }
 
@@ -236,8 +297,18 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
+            // ❌ HARD SAFETY CHECK (DO NOT REMOVE)
+            if (exam.StartDateTime.HasValue &&
+                exam.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be deleted.";
+                return RedirectToAction(nameof(Index));
+            }
+
             _context.Exams.Remove(exam);
             _context.SaveChanges();
+
+            TempData["SuccessMessage"] = "Exam deleted successfully.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -254,15 +325,37 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
+            // ❌ BLOCK ASSIGN IF EXAM HAS STARTED
+            if (exam.StartDateTime.HasValue &&
+                exam.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be reassigned.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // ❌ BLOCK ASSIGN IF NO QUESTIONS
+            bool hasQuestions = _context.Questions.Any(q => q.ExamId == exam.Id);
+            if (!hasQuestions)
+            {
+                TempData["ErrorMessage"] = "You must add at least one question before assigning this exam.";
+                return RedirectToAction(nameof(Index));
+            }
+
             ViewBag.Colleges = _context.Colleges.AsNoTracking().ToList();
             ViewBag.Courses = _context.Courses.AsNoTracking().ToList();
 
             return View(exam);
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Assign(int id, int collegeId, int courseId, DateTime startDateTime, DateTime endDateTime)
+        public IActionResult Assign(
+    int id,
+    int collegeId,
+    int courseId,
+    DateTime startDateTime,
+    DateTime endDateTime)
         {
             var exam = _context.Exams.Find(id);
             if (exam == null)
@@ -270,6 +363,22 @@ namespace OnlineExamSystem.Controllers
 
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
+
+            // ❌ HARD SAFETY: EXAM STARTED
+            if (exam.StartDateTime.HasValue &&
+                exam.StartDateTime.Value <= DateTime.Now)
+            {
+                TempData["ErrorMessage"] = "This exam has already started and cannot be reassigned.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // ❌ HARD SAFETY: NO QUESTIONS
+            bool hasQuestions = _context.Questions.Any(q => q.ExamId == exam.Id);
+            if (!hasQuestions)
+            {
+                TempData["ErrorMessage"] = "You must add at least one question before assigning this exam.";
+                return RedirectToAction(nameof(Index));
+            }
 
             if (endDateTime <= startDateTime)
             {
@@ -290,8 +399,11 @@ namespace OnlineExamSystem.Controllers
 
             _context.SaveChanges();
 
+            TempData["SuccessMessage"] = "Exam assigned successfully.";
+
             return RedirectToAction(nameof(Index));
         }
+
 
         // ---------------- RESULTS ----------------
 
