@@ -110,5 +110,17 @@ namespace OnlineExamSystem.Controllers
             // ✅ REDIRECT TO TEACHER DASHBOARD
             return RedirectToAction("Index", "Dashboard");
         }
+
+        public IActionResult AssignSubjects(int id)
+{
+    
+    ViewBag.TeacherId = id;
+
+    // Subjects will be loaded from DB
+    ViewBag.Subjects = null;
+
+    return View();
+}
+
     }
 }

@@ -1,0 +1,27 @@
+<div class="mb-3">
+    <label class="form-label fw-semibold">Select Subjects</label>
+
+    @if (ViewBag.Subjects == null)
+    {
+        <div class="text-muted">
+            Subjects will be loaded here once configured by admin.
+        </div>
+    }
+    else
+    {
+        foreach (var subject in ViewBag.Subjects)
+        {
+            <div class="form-check">
+                <input class="form-check-input"
+                       type="checkbox"
+                       name="SubjectIds"
+                       value="@subject.Id"
+                       id="sub_@subject.Id" />
+
+                <label class="form-check-label" for="sub_@subject.Id">
+                    @subject.Name
+                </label>
+            </div>
+        }
+    }
+</div>
