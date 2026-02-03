@@ -7,5 +7,8 @@
         public string Name { get; set; }
 
         public bool IsApproved { get; set; }
+
+        public ICollection<Subject> Subjects { get; set; }
+
     }
 }
