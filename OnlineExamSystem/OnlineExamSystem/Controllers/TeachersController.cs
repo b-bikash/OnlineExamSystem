@@ -95,7 +95,6 @@ namespace OnlineExamSystem.Controllers
                 ViewBag.Username = username;
                 ViewBag.Email = email;
 
-                // Re-render Profile view safely
                 return View("Profile", teacher);
             }
 
@@ -108,8 +107,8 @@ namespace OnlineExamSystem.Controllers
 
             TempData["SuccessMessage"] = "Profile updated successfully.";
 
-            return RedirectToAction("Profile");
+            // ✅ REDIRECT TO TEACHER DASHBOARD
+            return RedirectToAction("Index", "Dashboard");
         }
-
     }
 }
