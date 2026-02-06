@@ -19,29 +19,32 @@ namespace OnlineExamSystem.Models
         public int DurationInMinutes { get; set; }
 
         // NOTE:
-        // This will later be derived from Question.Marks,
-        // but for now we keep it to avoid breaking existing logic.
+        // Can later be derived from Questions
         [Required]
         public int TotalMarks { get; set; }
 
         // -------------------------------
-        // OWNERSHIP (LOCKED)
+        // OWNERSHIP (SOURCE OF TRUTH)
         // -------------------------------
-        // The teacher (UserId) who created this exam
+
+        // Teacher who created the exam
         [Required]
         public int CreatedByTeacherId { get; set; }
+        public Teacher CreatedByTeacher { get; set; }
 
         // -------------------------------
-        // PHASE 2: ASSIGNMENT & TIMING
+        // ACADEMIC CONTEXT (LOCKED)
         // -------------------------------
 
-        // Assigned College (Admin-created, Student-selected)
-        public int? CollegeId { get; set; }
+        // Exam is always for ONE subject
+        [Required]
+        public int SubjectId { get; set; }
+        public Subject Subject { get; set; }
 
-        // Assigned Course (Admin-created, Student-selected)
-        public int? CourseId { get; set; }
+        // -------------------------------
+        // TIMING
+        // -------------------------------
 
-        // Exam availability window
         public DateTime? StartDateTime { get; set; }
         public DateTime? EndDateTime { get; set; }
 

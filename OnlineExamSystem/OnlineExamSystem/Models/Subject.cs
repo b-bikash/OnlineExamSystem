@@ -14,6 +14,8 @@ namespace OnlineExamSystem.Models
     public ICollection<Exam> Exams { get; set; }
 
     public ICollection<TeacherSubject> TeacherSubjects { get; set; }
+    public ICollection<CourseSubject> CourseSubjects { get; set; }
+
 
 }
 }

@@ -62,30 +62,31 @@ namespace OnlineExamSystem.Controllers
 
                 var now = DateTime.Now;
 
-                var assignedExams = _context.Exams
+                var exams = _context.Exams
                     .AsNoTracking()
+                    .Include(e => e.Subject)
+                        .ThenInclude(s => s.CourseSubjects)
+                    .Include(e => e.CreatedByTeacher)
                     .Where(e =>
-                        e.CollegeId.HasValue &&
-                        e.CourseId.HasValue &&
+                        e.CreatedByTeacher.CollegeId == student.CollegeId &&
+                        e.Subject.CourseSubjects.Any(cs => cs.CourseId == student.CourseId) &&
                         e.StartDateTime.HasValue &&
-                        e.EndDateTime.HasValue &&
-                        e.CollegeId == student.CollegeId &&
-                        e.CourseId == student.CourseId
+                        e.EndDateTime.HasValue
                     )
-                    .OrderByDescending(e => e.EndDateTime) // default recent-first
+                    .OrderByDescending(e => e.EndDateTime)
                     .ToList();
 
                 var attempts = _context.ExamAttempts
                     .AsNoTracking()
                     .Where(a => a.StudentId == student.Id)
-                    .Include(a => a.Exam)
                     .ToList();
 
-                var viewModel = new StudentExamsViewModel();
-                viewModel.IsProfileCompleted = student.IsProfileCompleted;
+                var viewModel = new StudentExamsViewModel
+                {
+                    IsProfileCompleted = student.IsProfileCompleted
+                };
 
-
-                foreach (var exam in assignedExams)
+                foreach (var exam in exams)
                 {
                     var attempt = attempts.FirstOrDefault(a => a.ExamId == exam.Id);
 
@@ -113,7 +114,6 @@ namespace OnlineExamSystem.Controllers
                         viewModel.UpcomingExams.Add(exam);
                     }
                 }
-                // ✅ ORDERING — MOST RECENT FIRST
 
                 viewModel.LiveExams = viewModel.LiveExams
                     .OrderBy(e => e.EndDateTime)
@@ -139,17 +139,17 @@ namespace OnlineExamSystem.Controllers
 
                 var myExams = _context.Exams
                     .AsNoTracking()
+                    .Include(e => e.Subject)
                     .Where(e => e.CreatedByTeacherId == userId.Value)
                     .ToList();
 
                 return View(myExams);
             }
 
-            // ================= HARD BLOCK =================
+            // ================= ADMIN =================
             if (role != "Admin")
                 return Unauthorized();
 
-            // ================= ADMIN =================
             var adminExamList = (
                 from exam in _context.Exams.AsNoTracking()
                 join teacher in _context.Teachers
@@ -176,7 +176,6 @@ namespace OnlineExamSystem.Controllers
         // ---------------- CREATE ----------------
 
         [HttpGet]
-        [IgnoreAntiforgeryToken]
         public IActionResult Create()
         {
             if (!IsTeacherOrAdmin())
@@ -184,7 +183,6 @@ namespace OnlineExamSystem.Controllers
 
             return View();
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -217,7 +215,6 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            // ❌ BLOCK EDIT IF EXAM HAS STARTED
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
@@ -242,7 +239,6 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(examFromDb))
                 return Unauthorized();
 
-            // ❌ HARD SAFETY CHECK (DO NOT REMOVE)
             if (examFromDb.StartDateTime.HasValue &&
                 examFromDb.StartDateTime.Value <= DateTime.Now)
             {
@@ -254,14 +250,13 @@ namespace OnlineExamSystem.Controllers
             examFromDb.Description = exam.Description;
             examFromDb.DurationInMinutes = exam.DurationInMinutes;
             examFromDb.TotalMarks = exam.TotalMarks;
+            examFromDb.SubjectId = exam.SubjectId;
 
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = "Exam updated successfully.";
-
             return RedirectToAction(nameof(Index));
         }
-
 
         // ---------------- DELETE ----------------
 
@@ -275,7 +270,6 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            // ❌ BLOCK DELETE IF EXAM HAS STARTED
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
@@ -297,7 +291,6 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            // ❌ HARD SAFETY CHECK (DO NOT REMOVE)
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
@@ -309,11 +302,10 @@ namespace OnlineExamSystem.Controllers
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = "Exam deleted successfully.";
-
             return RedirectToAction(nameof(Index));
         }
 
-        // ---------------- ASSIGN ----------------
+        // ---------------- ASSIGN (TIMING ONLY) ----------------
 
         [HttpGet]
         public IActionResult Assign(int id)
@@ -325,7 +317,6 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            // ❌ BLOCK ASSIGN IF EXAM HAS STARTED
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
@@ -333,7 +324,6 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // ❌ BLOCK ASSIGN IF NO QUESTIONS
             bool hasQuestions = _context.Questions.Any(q => q.ExamId == exam.Id);
             if (!hasQuestions)
             {
@@ -341,21 +331,12 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Colleges = _context.Colleges.AsNoTracking().ToList();
-            ViewBag.Courses = _context.Courses.AsNoTracking().ToList();
-
             return View(exam);
         }
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Assign(
-    int id,
-    int collegeId,
-    int courseId,
-    DateTime startDateTime,
-    DateTime endDateTime)
+        public IActionResult Assign(int id, DateTime startDateTime, DateTime endDateTime)
         {
             var exam = _context.Exams.Find(id);
             if (exam == null)
@@ -364,19 +345,10 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            // ❌ HARD SAFETY: EXAM STARTED
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
                 TempData["ErrorMessage"] = "This exam has already started and cannot be reassigned.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            // ❌ HARD SAFETY: NO QUESTIONS
-            bool hasQuestions = _context.Questions.Any(q => q.ExamId == exam.Id);
-            if (!hasQuestions)
-            {
-                TempData["ErrorMessage"] = "You must add at least one question before assigning this exam.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -386,24 +358,16 @@ namespace OnlineExamSystem.Controllers
             }
 
             if (!ModelState.IsValid)
-            {
-                ViewBag.Colleges = _context.Colleges.AsNoTracking().ToList();
-                ViewBag.Courses = _context.Courses.AsNoTracking().ToList();
                 return View(exam);
-            }
 
-            exam.CollegeId = collegeId;
-            exam.CourseId = courseId;
             exam.StartDateTime = startDateTime;
             exam.EndDateTime = endDateTime;
 
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = "Exam assigned successfully.";
-
+            TempData["SuccessMessage"] = "Exam scheduled successfully.";
             return RedirectToAction(nameof(Index));
         }
-
 
         // ---------------- RESULTS ----------------
 
@@ -428,7 +392,6 @@ namespace OnlineExamSystem.Controllers
                 .ToList();
 
             ViewBag.ExamTitle = exam.Title;
-
             return View(attempts);
         }
     }

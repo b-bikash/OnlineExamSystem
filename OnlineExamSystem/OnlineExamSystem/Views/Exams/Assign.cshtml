@@ -1,91 +1,74 @@
 ﻿@model OnlineExamSystem.Models.Exam
 
 @{
-    ViewData["Title"] = "Assign Exam";
+    ViewData["Title"] = "Schedule Exam";
 
-    var colleges = ViewBag.Colleges as IEnumerable<dynamic>;
-    var courses = ViewBag.Courses as IEnumerable<dynamic>;
-
-    // 🔑 MODE DECISION
     bool isEditMode =
         !Model.StartDateTime.HasValue ||
         Context.Request.Query.ContainsKey("edit");
 }
 
-<h2>Assign Exam</h2>
+<h2>Schedule Exam</h2>
 <hr />
 
 <form asp-action="Assign" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" name="id" value="@Model.Id" />
 
+    <!-- Exam title (read-only) -->
     <div class="mb-3">
         <label class="form-label">Exam</label>
-        <input type="text" class="form-control" value="@Model.Title" disabled />
+        <input type="text"
+               class="form-control"
+               value="@Model.Title"
+               disabled />
     </div>
 
+    <!-- Subject (read-only, context info) -->
     <div class="mb-3">
-        <label class="form-label">College</label>
-        <select name="collegeId"
-                class="form-control"
-                @(isEditMode ? "" : "disabled")>
-            <option value="">-- Select College --</option>
-            @foreach (var college in colleges)
-            {
-                <option value="@college.Id"
-                        selected="@(Model.CollegeId == college.Id)">
-                    @college.Name
-                </option>
-            }
-        </select>
+        <label class="form-label">Subject</label>
+        <input type="text"
+               class="form-control"
+               value="@Model.Subject?.Name"
+               disabled />
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Course</label>
-        <select name="courseId"
-                class="form-control"
-                @(isEditMode ? "" : "disabled")>
-            <option value="">-- Select Course --</option>
-            @foreach (var course in courses)
-            {
-                <option value="@course.Id"
-                        selected="@(Model.CourseId == course.Id)">
-                    @course.Name
-                </option>
-            }
-        </select>
-    </div>
-
+    <!-- Start time -->
     <div class="mb-3">
         <label class="form-label">Start Date & Time</label>
         <input type="datetime-local"
                name="startDateTime"
                class="form-control"
                value="@(Model.StartDateTime.HasValue
-                                   ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
-                                   : "")"
-               @(isEditMode ? "" : "readonly") />
+                    ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                    : "")"
+               @(isEditMode ? "" : "readonly")
+               required />
     </div>
 
+    <!-- End time -->
     <div class="mb-3">
         <label class="form-label">End Date & Time</label>
         <input type="datetime-local"
                name="endDateTime"
                class="form-control"
                value="@(Model.EndDateTime.HasValue
-                                   ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
-                                   : "")"
-               @(isEditMode ? "" : "readonly") />
+                    ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                    : "")"
+               @(isEditMode ? "" : "readonly")
+               required />
     </div>
 
+    <!-- Validation -->
     <div class="text-danger">
         @Html.ValidationSummary()
     </div>
 
+    <!-- Actions -->
     @if (isEditMode)
     {
         <button type="submit" class="btn btn-primary">
-            @(Model.StartDateTime.HasValue ? "Update Assignment" : "Assign Exam")
+            @(Model.StartDateTime.HasValue ? "Update Schedule" : "Schedule Exam")
         </button>
 
         <a asp-action="Index" class="btn btn-secondary ms-2">
@@ -98,7 +81,7 @@
            asp-route-id="@Model.Id"
            asp-route-edit="true"
            class="btn btn-warning">
-            Edit Assignment
+            Edit Schedule
         </a>
 
         <a asp-action="Index" class="btn btn-secondary ms-2">
