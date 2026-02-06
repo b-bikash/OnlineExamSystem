@@ -20,7 +20,8 @@ namespace OnlineExamSystem.Models
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<College> Colleges { get; set; }
-
+        public DbSet<Subject> Subjects { get; set; }
+        public DbSet<TeacherSubject> TeacherSubjects { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -79,6 +80,16 @@ namespace OnlineExamSystem.Models
 
             modelBuilder.Entity<TeacherSubject>()
                 .HasKey(ts => new { ts.TeacherId, ts.SubjectId });
+
+            modelBuilder.Entity<TeacherSubject>()
+                .HasOne(ts => ts.Teacher)
+                .WithMany(t => t.TeacherSubjects)
+                .HasForeignKey(ts => ts.TeacherId);
+
+            modelBuilder.Entity<TeacherSubject>()
+                .HasOne(ts => ts.Subject)
+                .WithMany(s => s.TeacherSubjects)
+                .HasForeignKey(ts => ts.SubjectId);
 
         }
     }
