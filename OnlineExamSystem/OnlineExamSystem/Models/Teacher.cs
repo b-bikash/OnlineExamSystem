@@ -9,5 +9,8 @@
         public string Name { get; set; }
 
         public User User { get; set; }
+
+        public ICollection<TeacherSubject> TeacherSubjects { get; set; }
+
     }
 }

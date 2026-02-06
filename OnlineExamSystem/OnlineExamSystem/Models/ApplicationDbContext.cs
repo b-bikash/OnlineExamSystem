@@ -72,6 +72,14 @@ namespace OnlineExamSystem.Models
                 .WithMany()
                 .HasForeignKey(sa => sa.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+
+            // -------------------------------
+            // TEACHER SUBJECT MANY-TO-MANY
+
+            modelBuilder.Entity<TeacherSubject>()
+                .HasKey(ts => new { ts.TeacherId, ts.SubjectId });
+
         }
     }
 }

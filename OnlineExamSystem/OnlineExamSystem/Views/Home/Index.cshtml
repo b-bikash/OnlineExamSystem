@@ -8,48 +8,22 @@
     <div class="row justify-content-center">
         <div class="col-md-10 col-lg-8 text-center">
 
-            <h1 class="display-5 fw-bold mb-3">
-                B&amp;B ExamVerse
-            </h1>
+            <section class="text-center py-5">
+                <h1 class="fw-bold">B&B ExamVerse</h1>
 
-            <p class="lead text-muted mb-4">
-                A reliable and user-friendly online examination platform for students,
-                teachers, and administrators.
-            </p>
+                <p class="text-muted mt-2">
+                    Secure & user-friendly online examination platform
+                </p>
 
-            <p class="text-muted mb-5">
-                B&amp;B ExamVerse simplifies the entire examination lifecycle —
-                from exam creation and assignment to secure attempts, evaluation,
-                and result management — all in one integrated system.
-            </p>
-
-            <!-- PRIMARY ACTIONS (INTENTIONAL PLACEMENT) -->
-            <div class="d-flex justify-content-center gap-3 mb-5">
-                <a asp-controller="Account"
-                   asp-action="Login"
-                   class="btn btn-primary btn-lg px-5">
-                    Login
-                </a>
-
-                <a asp-controller="Account"
-                   asp-action="Register"
-                   class="btn btn-outline-secondary btn-lg px-5">
-                    Register
-                </a>
-            </div>
-
-            <!-- SUBTLE DIVIDER -->
-            <div class="d-flex justify-content-center mb-4">
-                <div style="
-                        width: 80px;
-                        height: 1px;
-                        background-color: rgba(0, 0, 0, 0.1);
-                        ">
+                <div class="mt-4">
+                    <a class="btn btn-primary me-2" href="/Account/Login">Login</a>
+                    <a class="btn btn-outline-primary" href="/Account/Register">Register</a>
                 </div>
-            </div>
+            </section>
 
         </div>
     </div>
+
 
     <!-- FEATURE CARDS -->
     <div class="row g-4 mt-2">
