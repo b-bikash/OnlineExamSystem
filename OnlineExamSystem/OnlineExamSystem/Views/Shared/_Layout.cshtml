@@ -11,6 +11,9 @@
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="~/css/site.css" />
+
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -29,115 +32,123 @@
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
 
-            @if (Context.Session.GetInt32("UserId") != null)
-            {
-                <a class="navbar-brand" asp-controller="Dashboard" asp-action="Index">
-                    Online Exam
-                </a>
-            }
-            else
-            {
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
-                    Online Exam
-                </a>
-            }
+        <!-- BRAND : Image logo + title as ONE clickable unit -->
+        <a class="navbar-brand brand-home d-flex align-items-center"
+   asp-controller="@(Context.Session.GetInt32("UserId") != null ? "Dashboard" : "Home")"
+   asp-action="Index">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <!-- REAL SVG LOGO -->
+    <svg class="brand-logo me-2"
+         width="28"
+         height="28"
+         viewBox="0 0 24 24"
+         fill="none"
+         xmlns="http://www.w3.org/2000/svg">
 
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <path d="M3 10.5L12 3L21 10.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round" />
 
-                    @if (Context.Session.GetString("Role") != null)
+        <path d="M5 10.5V21H19V10.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round" />
+
+        <path d="M10 21V14H14V21"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round" />
+    </svg>
+
+    <span class="brand-text">Online Exam</span>
+</a>
+
+
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarContent">
+
+            <!-- LEFT -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                @if (Context.Session.GetString("Role") != null)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           asp-controller="Dashboard"
+                           asp-action="Index">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    @if (Context.Session.GetString("Role") == "Student")
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">
-                                Dashboard
+                            <a class="nav-link"
+                               asp-controller="Students"
+                               asp-action="Profile">
+                                My Profile
                             </a>
                         </li>
-
-                        @* TEACHER *@
-                        @if (Context.Session.GetString("Role") == "Teacher")
-                        {
-                            @*
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Exams" asp-action="Index">
-                                    Exams
-                                </a>
-                            </li>
-                            *@
-                        }
-
-                        @* STUDENT *@
-                        @if (Context.Session.GetString("Role") == "Student")
-                        {
-                            @*
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Exams" asp-action="Available">
-                                    Available Exams
-                                </a>
-                            </li>
-                            *@
-
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Students" asp-action="Profile">
-                                    My Profile
-                                </a>
-                            </li>
-                        }
                     }
-                </ul>
+                }
+            </ul>
 
-                <ul class="navbar-nav ms-auto align-items-center">
-                    @if (Context.Session.GetString("UserId") != null)
-                    {
-                        <div class="d-flex align-items-center gap-3">
-                        
-                         <li class="nav-item me-3">
-                            
-                            <span class="text-light small">
-                                Welcome,
-                                <strong>@Context.Session.GetString("Username")</strong>
-                            </span>
+            <!-- RIGHT -->
+            <ul class="navbar-nav ms-auto align-items-center">
+                @if (Context.Session.GetInt32("UserId") != null)
+                {
+                    <li class="nav-item me-3">
+                        <span class="text-light small">
+                            Welcome, <strong>@Context.Session.GetString("Username")</strong>
+                        </span>
+                    </li>
 
-                        </li>
-                        <li class="nav-item">
+                    <li class="nav-item">
+                        <a asp-controller="Account"
+                           asp-action="Logout"
+                           class="btn btn-outline-light btn-sm px-3">
+                            Logout
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <div class="d-flex align-items-center gap-2">
                             <a asp-controller="Account"
-                               asp-action="Logout"
+                               asp-action="Login"
                                class="btn btn-outline-light btn-sm px-3">
-                                Logout
+                                Login
                             </a>
-                        </li>
+
+                            <a asp-controller="Account"
+                               asp-action="Register"
+                               class="btn btn-primary btn-sm px-3">
+                                Register
+                            </a>
                         </div>
-                    }
-                    else
-                    {
-                        <li class="nav-item">
-                            <div class="d-flex align-items-center gap-2">
-                                <a asp-controller="Account"
-                                   asp-action="Login"
-                                   class="btn btn-outline-light btn-sm px-3">
-                                    Login
-                                </a>
+                    </li>
+                }
+            </ul>
 
-                                <a asp-controller="Account"
-                                   asp-action="Register"
-                                   class="btn btn-primary btn-sm px-3">
-                                    Register
-                                </a>
-                            </div>
-
-                        </li>
-                    }
-                </ul>
-            </div>
         </div>
-    </nav>
+    </div>
+</nav>
+
+
+
+
 
     <!-- ================= BREADCRUMB BAR ================= -->
     @*@if (ViewBag.Breadcrumbs != null)

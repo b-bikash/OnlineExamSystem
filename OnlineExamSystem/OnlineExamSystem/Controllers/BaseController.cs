@@ -6,6 +6,16 @@ namespace OnlineExamSystem.Controllers
 {
     public class BaseController : Controller
     {
+        protected string? Role =>
+            HttpContext.Session.GetString("Role");
+
+        protected int? UserId =>
+            HttpContext.Session.GetInt32("UserId");
+
+        protected bool IsAdmin => Role == "Admin";
+        protected bool IsTeacher => Role == "Teacher";
+        protected bool IsStudent => Role == "Student";
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             var controllerName = context.RouteData.Values["controller"]?.ToString();
@@ -18,17 +28,15 @@ namespace OnlineExamSystem.Controllers
                 return;
             }
 
-            // 🔑 IMPORTANT:
-            // Do NOT block POST requests here
+            // Do NOT block POST requests
             if (httpMethod == "POST")
             {
                 base.OnActionExecuting(context);
                 return;
             }
 
-            var userId = context.HttpContext.Session.GetInt32("UserId");
-
-            if (userId == null)
+            // Authentication check
+            if (UserId == null)
             {
                 context.Result = new RedirectToActionResult(
                     "Login",

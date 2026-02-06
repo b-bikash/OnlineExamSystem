@@ -29,3 +29,33 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.navbar-brand img {
+    max-height: 35px;
+    width: auto;
+}
+
+.brand-home:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.brand-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.brand-logo {
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    position: relative;
+    top: 1.5px;   /* 👈 THIS is the key */
+}

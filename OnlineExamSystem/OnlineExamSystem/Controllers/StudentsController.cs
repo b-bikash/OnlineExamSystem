@@ -34,8 +34,9 @@ namespace OnlineExamSystem.Controllers
 
             // COURSES (unchanged, already working)
             var courses = _context.Courses
-                .Where(c => c.IsApproved || c.Id == student.CourseId)
-                .ToList();
+    .Where(c => c.Id == student.CourseId)
+    .ToList();
+
 
             // COLLEGES — 🔥 FIXED LOGIC
             var colleges = _context.Colleges
@@ -69,8 +70,9 @@ namespace OnlineExamSystem.Controllers
                 return NotFound();
 
             ViewBag.Courses = _context.Courses
-                .Where(c => c.IsApproved || c.Id == student.CourseId)
-                .ToList();
+    .Where(c => c.Id == student.CourseId)
+    .ToList();
+
 
             ViewBag.Colleges = _context.Colleges
                 .Where(c => c.IsActive || c.Id == student.CollegeId)
@@ -107,8 +109,9 @@ namespace OnlineExamSystem.Controllers
                 );
 
                 ViewBag.Courses = _context.Courses
-                    .Where(c => c.IsApproved || c.Id == model.CourseId)
-                    .ToList();
+    .Where(c => c.Id == model.CourseId)
+    .ToList();
+
 
                 ViewBag.Colleges = _context.Colleges
                     .Where(c => c.IsActive || c.Id == model.CollegeId)
@@ -164,8 +167,9 @@ namespace OnlineExamSystem.Controllers
                 );
 
                 ViewBag.Courses = _context.Courses
-                    .Where(c => c.IsApproved || c.Id == model.CourseId)
-                    .ToList();
+    .Where(c => c.Id == model.CourseId)
+    .ToList();
+
 
                 ViewBag.Colleges = _context.Colleges
                     .Where(c => c.IsActive || c.Id == model.CollegeId)

@@ -137,7 +137,6 @@ namespace OnlineExamSystem.Controllers
             }
 
             course.Name = model.Name;
-            course.IsApproved = model.IsApproved;
 
             _context.SaveChanges();
 
