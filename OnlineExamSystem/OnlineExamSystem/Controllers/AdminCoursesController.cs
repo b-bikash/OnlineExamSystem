@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OnlineExamSystem.Models;
+using OnlineExamSystem.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -167,5 +169,79 @@ namespace OnlineExamSystem.Controllers
             TempData["Success"] = "Course deleted successfully.";
             return RedirectToAction(nameof(Index));
         }
+
+        // GET: AdminCourses/Subjects/5
+public IActionResult Subjects(int id)
+{
+    var role = HttpContext.Session.GetString("Role");
+    if (role != "Admin")
+        return RedirectToAction("Index", "Dashboard");
+
+    var course = _context.Courses
+        .AsNoTracking()
+        .FirstOrDefault(c => c.Id == id);
+
+    if (course == null)
+        return NotFound();
+
+    var allSubjects = _context.Subjects
+        .AsNoTracking()
+        .OrderBy(s => s.Name)
+        .ToList();
+
+    var selectedSubjectIds = _context.CourseSubjects
+        .Where(cs => cs.CourseId == id)
+        .Select(cs => cs.SubjectId)
+        .ToList();
+
+    var vm = new CourseSubjectsViewModel
+    {
+        Course = course,
+        AllSubjects = allSubjects,
+        SelectedSubjectIds = selectedSubjectIds
+    };
+
+    return View(vm);
+}
+// POST: AdminCourses/Subjects
+[HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Subjects(int courseId, List<int> selectedSubjectIds)
+{
+    var role = HttpContext.Session.GetString("Role");
+    if (role != "Admin")
+        return RedirectToAction("Index", "Dashboard");
+
+    var course = _context.Courses.FirstOrDefault(c => c.Id == courseId);
+    if (course == null)
+        return NotFound();
+
+    // Remove existing mappings
+    var existingMappings = _context.CourseSubjects
+        .Where(cs => cs.CourseId == courseId);
+
+    _context.CourseSubjects.RemoveRange(existingMappings);
+
+    // Insert new mappings
+    if (selectedSubjectIds != null && selectedSubjectIds.Any())
+    {
+        var newMappings = selectedSubjectIds.Select(subjectId =>
+            new CourseSubject
+            {
+                CourseId = courseId,
+                SubjectId = subjectId
+            });
+
+        _context.CourseSubjects.AddRange(newMappings);
+    }
+
+    _context.SaveChanges();
+
+    TempData["Success"] = "Subjects updated successfully.";
+
+    return RedirectToAction(nameof(Subjects), new { id = courseId });
+}
+
+
     }
 }
