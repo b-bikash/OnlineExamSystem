@@ -56,5 +56,6 @@ namespace OnlineExamSystem.Models
 
         // Navigation
         public ICollection<Question> Questions { get; set; }
+        public ICollection<ExamAttempt> ExamAttempts { get; set; }
     }
 }

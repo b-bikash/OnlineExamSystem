@@ -19,5 +19,6 @@
         public User User { get; set; }
         public Course Course { get; set; }
         public College College { get; set; }
+        public ICollection<ExamAttempt> ExamAttempts { get; set; }
     }
 }

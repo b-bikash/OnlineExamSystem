@@ -21,7 +21,10 @@ namespace OnlineExamSystem.Models
         public DbSet<Course> Courses { get; set; }
         public DbSet<College> Colleges { get; set; }
         public DbSet<Subject> Subjects { get; set; }
+
         public DbSet<TeacherSubject> TeacherSubjects { get; set; }
+        public DbSet<CourseSubject> CourseSubjects { get; set; } // ✅ ADD THIS
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -65,7 +68,7 @@ namespace OnlineExamSystem.Models
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
-            // STUDENT ANSWER → QUESTION (CRITICAL FIX)
+            // STUDENT ANSWER → QUESTION
             // -------------------------------
 
             modelBuilder.Entity<StudentAnswer>()
@@ -73,10 +76,10 @@ namespace OnlineExamSystem.Models
                 .WithMany()
                 .HasForeignKey(sa => sa.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
 
             // -------------------------------
-            // TEACHER SUBJECT MANY-TO-MANY
+            // TEACHER ↔ SUBJECT (MANY-TO-MANY)
+            // -------------------------------
 
             modelBuilder.Entity<TeacherSubject>()
                 .HasKey(ts => new { ts.TeacherId, ts.SubjectId });
@@ -84,12 +87,45 @@ namespace OnlineExamSystem.Models
             modelBuilder.Entity<TeacherSubject>()
                 .HasOne(ts => ts.Teacher)
                 .WithMany(t => t.TeacherSubjects)
-                .HasForeignKey(ts => ts.TeacherId);
+                .HasForeignKey(ts => ts.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<TeacherSubject>()
                 .HasOne(ts => ts.Subject)
                 .WithMany(s => s.TeacherSubjects)
-                .HasForeignKey(ts => ts.SubjectId);
+                .HasForeignKey(ts => ts.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // -------------------------------
+            // COURSE ↔ SUBJECT (MANY-TO-MANY)
+            // -------------------------------
+
+            modelBuilder.Entity<CourseSubject>()
+                .HasKey(cs => new { cs.CourseId, cs.SubjectId });
+
+            modelBuilder.Entity<CourseSubject>()
+                .HasOne(cs => cs.Course)
+                .WithMany(c => c.CourseSubjects)
+                .HasForeignKey(cs => cs.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CourseSubject>()
+                .HasOne(cs => cs.Subject)
+                .WithMany(s => s.CourseSubjects)
+                .HasForeignKey(cs => cs.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ExamAttempt>()
+                .HasOne(ea => ea.Student)
+                .WithMany(s => s.ExamAttempts)
+                .HasForeignKey(ea => ea.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ExamAttempt>()
+                .HasOne(ea => ea.Exam)
+                .WithMany(e => e.ExamAttempts)
+                .HasForeignKey(ea => ea.ExamId)
+                .OnDelete(DeleteBehavior.Restrict);
 
         }
     }
