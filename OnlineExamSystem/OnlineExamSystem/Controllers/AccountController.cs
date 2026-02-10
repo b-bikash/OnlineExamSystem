@@ -66,7 +66,10 @@ namespace OnlineExamSystem.Controllers
                     .FirstOrDefault(t => t.UserId == user.Id);
 
                 if (teacher != null)
+                {
                     fullName = teacher.Name;
+                    HttpContext.Session.SetInt32("TeacherId", teacher.Id);
+                }
             }
 
             HttpContext.Session.SetString("FullName", fullName);
@@ -80,72 +83,90 @@ namespace OnlineExamSystem.Controllers
         [HttpGet]
         public IActionResult Register()
         {
+            ViewBag.Colleges = _context.Colleges.ToList();
             return View();
         }
 
         [HttpPost]
-        public IActionResult Register(RegisterViewModel model)
+public IActionResult Register(RegisterViewModel model)
+{
+    if (!ModelState.IsValid)
+    {
+        return View(model);
+    }
+
+    if (model.Role != "Student" && model.Role != "Teacher")
+    {
+        ModelState.AddModelError("", "Invalid role selected.");
+        return View(model);
+    }
+
+    var existingUser = _context.Users
+        .FirstOrDefault(u => u.Email == model.Email);
+
+    if (existingUser != null)
+    {
+        ModelState.AddModelError("", "Email already registered.");
+        return View(model);
+    }
+
+    // ✅ TRANSACTION START
+    using var transaction = _context.Database.BeginTransaction();
+
+    try
+    {
+        var user = new User
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            Username = model.Username,
+            Email = model.Email,
+            PasswordHash = PasswordHelper.HashPassword(model.Password),
+            Role = model.Role,
+            IsActive = true
+        };
 
-            // Allow only Student or Teacher
-            if (model.Role != "Student" && model.Role != "Teacher")
-            {
-                ModelState.AddModelError("", "Invalid role selected.");
-                return View(model);
-            }
+        _context.Users.Add(user);
+        _context.SaveChanges(); // generates user.Id
 
-            // Check email uniqueness
-            var existingUser = _context.Users
-                .FirstOrDefault(u => u.Email == model.Email);
-
-            if (existingUser != null)
+        if (user.Role == "Student")
+        {
+            var student = new Student
             {
-                ModelState.AddModelError("", "Email already registered.");
-                return View(model);
-            }
-
-            var user = new User
-            {
-                Username = model.Username,
-                Email = model.Email,
-                PasswordHash = PasswordHelper.HashPassword(model.Password),
-                Role = model.Role,
-                IsActive = true
+                UserId = user.Id,
+                Name = model.Name
             };
 
-            _context.Users.Add(user);
-            _context.SaveChanges();
-
-            // ✅ CORRECT NAME HANDLING
-            if (user.Role == "Student")
-            {
-                var student = new Student
-                {
-                    UserId = user.Id,
-                    Name = model.Name
-                };
-
-                _context.Students.Add(student);
-            }
-            else if (user.Role == "Teacher")
-            {
-                var teacher = new Teacher
-                {
-                    UserId = user.Id,
-                    Name = model.Name
-                };
-
-                _context.Teachers.Add(teacher);
-            }
-
-            _context.SaveChanges();
-
-            return RedirectToAction("Login");
+            _context.Students.Add(student);
         }
+        else if (user.Role == "Teacher")
+        {
+            // 🔴 REQUIRED VALIDATION
+            if (model.CollegeId == null)
+            {
+                throw new Exception("CollegeId is required for Teacher.");
+            }
+
+            var teacher = new Teacher
+            {
+                UserId = user.Id,
+                Name = model.Name,
+                CollegeId = model.CollegeId.Value // ✅ FIX
+            };
+
+            _context.Teachers.Add(teacher);
+        }
+
+        _context.SaveChanges(); // student / teacher
+        transaction.Commit();
+
+        return RedirectToAction("Login");
+    }
+    catch
+    {
+        transaction.Rollback();
+        ModelState.AddModelError("", "Registration failed. Please try again.");
+        return View(model);
+    }
+}
 
 
         // =========================

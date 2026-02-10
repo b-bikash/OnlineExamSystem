@@ -1,4 +1,6 @@
-﻿@{
+﻿@model OnlineExamSystem.Models.Teacher
+
+@{
     ViewData["Title"] = "Dashboard";
 
     var role = Context.Session.GetString("Role");
@@ -27,12 +29,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">User Management</h5>
-                            <p class="card-text text-muted">
-                                Create, edit and manage users.
-                            </p>
-                        </div>
+                        <h5 class="card-title">User Management</h5>
+                        <p class="card-text text-muted">Create, edit and manage users.</p>
                         <div class="mt-auto">
                             <a asp-controller="Users" asp-action="Index"
                                class="btn btn-primary btn-sm">
@@ -47,12 +45,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">Student Management</h5>
-                            <p class="card-text text-muted">
-                                View and correct student details.
-                            </p>
-                        </div>
+                        <h5 class="card-title">Student Management</h5>
+                        <p class="card-text text-muted">View and correct student details.</p>
                         <div class="mt-auto">
                             <a asp-controller="AdminStudents" asp-action="Index"
                                class="btn btn-secondary btn-sm">
@@ -67,14 +61,10 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">Teacher Management</h5>
-                            <p class="card-text text-muted">
-                                View, add, and manage teachers.
-                            </p>
-                        </div>
+                        <h5 class="card-title">Teacher Management</h5>
+                        <p class="card-text text-muted">View, add, and manage teachers.</p>
                         <div class="mt-auto">
-                            <a asp-controller="Teacher" asp-action="Index"
+                            <a asp-controller="AdminTeachers" asp-action="Index"
                                class="btn btn-warning btn-sm">
                                 Manage Teachers
                             </a>
@@ -87,12 +77,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">Course Management</h5>
-                            <p class="card-text text-muted">
-                                View and manage courses.
-                            </p>
-                        </div>
+                        <h5 class="card-title">Course Management</h5>
+                        <p class="card-text text-muted">View and manage courses.</p>
                         <div class="mt-auto">
                             <a asp-controller="AdminCourses" asp-action="Index"
                                class="btn btn-info btn-sm">
@@ -103,16 +89,28 @@
                 </div>
             </div>
 
+            <!-- Subject Management -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">Subject Management</h5>
+                        <p class="card-text text-muted">Create and manage academic subjects.</p>
+                        <div class="mt-auto">
+                            <a asp-controller="AdminSubjects" asp-action="Index"
+                               class="btn btn-info btn-sm">
+                                Manage Subjects
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- College Management -->
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">College Management</h5>
-                            <p class="card-text text-muted">
-                                View and manage colleges.
-                            </p>
-                        </div>
+                        <h5 class="card-title">College Management</h5>
+                        <p class="card-text text-muted">View and manage colleges.</p>
                         <div class="mt-auto">
                             <a asp-controller="AdminColleges" asp-action="Index"
                                class="btn btn-dark btn-sm">
@@ -127,12 +125,8 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body d-flex flex-column">
-                        <div>
-                            <h5 class="card-title">Exam Management</h5>
-                            <p class="card-text text-muted">
-                                View and manage all exams.
-                            </p>
-                        </div>
+                        <h5 class="card-title">Exam Management</h5>
+                        <p class="card-text text-muted">View and manage all exams.</p>
                         <div class="mt-auto">
                             <a asp-controller="Exams" asp-action="Index"
                                class="btn btn-success btn-sm">
@@ -144,7 +138,6 @@
             </div>
         }
 
-
         @* ================= TEACHER ================= *@
         @if (role == "Teacher")
         {
@@ -152,9 +145,7 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">Exam Management</h5>
-                        <p class="card-text text-muted">
-                            Create exams and add questions.
-                        </p>
+                        <p class="card-text text-muted">Create exams and add questions.</p>
                         <a asp-controller="Exams" asp-action="Index"
                            class="btn btn-success btn-sm">
                             View Exams
@@ -163,14 +154,11 @@
                 </div>
             </div>
 
-            <!-- ✅ NEW: TEACHER PROFILE -->
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">My Profile</h5>
-                        <p class="card-text text-muted">
-                            Update your personal details.
-                        </p>
+                        <p class="card-text text-muted">Update your personal details.</p>
                         <a asp-controller="Teachers" asp-action="Profile"
                            class="btn btn-warning btn-sm">
                             Edit Profile
@@ -179,29 +167,37 @@
                 </div>
             </div>
 
-            @if (role == "Teacher")
-{
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 shadow-sm border-0">
-            <div class="card-body">
-                <h5 class="card-title">My Subjects</h5>
+            <!-- ✅ FIXED: MY SUBJECTS -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">My Subjects</h5>
+                        <p class="text-muted mb-2">
+                            Subjects assigned to you by admin.
+                        </p>
 
-                <p class="text-muted mb-2">
-                    Subjects assigned to you by admin.
-                </p>
-
-                <div class="text-muted fst-italic">
-                    Your subjects will appear here once they are assigned.
+                        @if (Model != null && Model.TeacherSubjects != null && Model.TeacherSubjects.Any())
+                        {
+                            <ul class="mb-0">
+                                @foreach (var ts in Model.TeacherSubjects)
+                                {
+                                    <li>@ts.Subject.Name</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">
+                                No subjects assigned yet.
+                            </span>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-}
-
         }
 
         @* ================= STUDENT ================= *@
-        @if (Context.Session.GetString("Role") == "Student")
+        @if (role == "Student")
         {
             var student = ViewBag.Student as OnlineExamSystem.Models.Student;
 
@@ -216,17 +212,12 @@
                     </a>
                 </div>
             }
-        }
 
-        @if (role == "Student")
-        {
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <h5 class="card-title">Available Exams</h5>
-                        <p class="card-text text-muted">
-                            Attempt available exams.
-                        </p>
+                        <p class="card-text text-muted">Attempt available exams.</p>
                         <a asp-controller="Exams" asp-action="Index"
                            class="btn btn-warning btn-sm">
                             View Exams
@@ -235,5 +226,6 @@
                 </div>
             </div>
         }
+
     </div>
 </div>

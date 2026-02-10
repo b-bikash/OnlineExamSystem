@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using OnlineExamSystem.Models.ViewModels;
@@ -30,12 +31,30 @@ namespace OnlineExamSystem.Controllers
         {
             var role = HttpContext.Session.GetString("Role");
             var userId = HttpContext.Session.GetInt32("UserId");
+            var teacherId = HttpContext.Session.GetInt32("TeacherId");
 
             if (role == "Admin")
                 return true;
 
-            if (role == "Teacher" && userId.HasValue && exam.CreatedByTeacherId == userId.Value)
-                return true;
+            if (role == "Teacher")
+            {
+                if (teacherId.HasValue)
+                {
+                    return exam.CreatedByTeacherId == teacherId.Value;
+                }
+
+                // Fallback (e.g. session expired but user still logged in context)
+                if (userId.HasValue)
+                {
+                     var teacher = _context.Teachers
+                        .AsNoTracking()
+                        .FirstOrDefault(t => t.UserId == userId.Value);
+                     if (teacher != null)
+                     {
+                         return exam.CreatedByTeacherId == teacher.Id;
+                     }
+                }
+            }
 
             return false;
         }
@@ -81,7 +100,7 @@ namespace OnlineExamSystem.Controllers
                     .Where(a => a.StudentId == student.Id)
                     .ToList();
 
-                var viewModel = new StudentExamsViewModel
+                var vm = new StudentExamsViewModel
                 {
                     IsProfileCompleted = student.IsProfileCompleted
                 };
@@ -92,85 +111,79 @@ namespace OnlineExamSystem.Controllers
 
                     if (attempt != null)
                     {
-                        var teacherName = _context.Teachers
-                            .AsNoTracking()
-                            .Where(t => t.UserId == exam.CreatedByTeacherId)
-                            .Select(t => t.Name)
-                            .FirstOrDefault() ?? "—";
-
-                        viewModel.AttemptedExams.Add(new StudentAttemptedExamItem
+                        vm.AttemptedExams.Add(new StudentAttemptedExamItem
                         {
                             Exam = exam,
                             Attempt = attempt,
-                            TeacherName = teacherName
+                            TeacherName = exam.CreatedByTeacher?.Name ?? "—"
                         });
                     }
                     else if (now >= exam.StartDateTime && now <= exam.EndDateTime)
                     {
-                        viewModel.LiveExams.Add(exam);
+                        vm.LiveExams.Add(exam);
                     }
                     else if (now < exam.StartDateTime)
                     {
-                        viewModel.UpcomingExams.Add(exam);
+                        vm.UpcomingExams.Add(exam);
                     }
                 }
 
-                viewModel.LiveExams = viewModel.LiveExams
-                    .OrderBy(e => e.EndDateTime)
-                    .ToList();
-
-                viewModel.UpcomingExams = viewModel.UpcomingExams
-                    .OrderBy(e => e.StartDateTime)
-                    .ToList();
-
-                viewModel.AttemptedExams = viewModel.AttemptedExams
+                vm.LiveExams = vm.LiveExams.OrderBy(e => e.EndDateTime).ToList();
+                vm.UpcomingExams = vm.UpcomingExams.OrderBy(e => e.StartDateTime).ToList();
+                vm.AttemptedExams = vm.AttemptedExams
                     .OrderByDescending(a => a.Attempt.EndTime)
                     .ToList();
 
-                return View(viewModel);
+                return View(vm);
             }
 
             // ================= TEACHER =================
             if (role == "Teacher")
             {
                 var userId = HttpContext.Session.GetInt32("UserId");
+                var teacherId = HttpContext.Session.GetInt32("TeacherId");
+
                 if (userId == null)
                     return Unauthorized();
 
-                var myExams = _context.Exams
+                if (teacherId == null)
+                {
+                     var uniqueTeacher = _context.Teachers
+                        .AsNoTracking()
+                        .FirstOrDefault(t => t.UserId == userId.Value);
+                     if (uniqueTeacher != null)
+                     {
+                         teacherId = uniqueTeacher.Id;
+                         HttpContext.Session.SetInt32("TeacherId", uniqueTeacher.Id);
+                     }
+                     else
+                     {
+                         return Unauthorized();
+                     }
+                }
+
+                var exams = _context.Exams
                     .AsNoTracking()
                     .Include(e => e.Subject)
-                    .Where(e => e.CreatedByTeacherId == userId.Value)
+                    .Where(e => e.CreatedByTeacherId == teacherId.Value)
                     .ToList();
 
-                return View(myExams);
+                return View(exams);
             }
 
             // ================= ADMIN =================
-            if (role != "Admin")
-                return Unauthorized();
+            if (role == "Admin")
+            {
+                var exams = _context.Exams
+                    .AsNoTracking()
+                    .Include(e => e.Subject)
+                    .Include(e => e.CreatedByTeacher)
+                    .ToList();
 
-            var adminExamList = (
-                from exam in _context.Exams.AsNoTracking()
-                join teacher in _context.Teachers
-                    on exam.CreatedByTeacherId equals teacher.UserId into teacherJoin
-                from teacher in teacherJoin.DefaultIfEmpty()
-                join user in _context.Users
-                    on teacher.UserId equals user.Id into userJoin
-                from user in userJoin.DefaultIfEmpty()
-                select new AdminExamListItemViewModel
-                {
-                    ExamId = exam.Id,
-                    Title = exam.Title,
-                    Description = exam.Description,
-                    DurationInMinutes = exam.DurationInMinutes,
-                    TotalMarks = exam.TotalMarks,
-                    TeacherUserId = exam.CreatedByTeacherId,
-                    TeacherName = user != null ? user.Username : "—"
-                }
-            ).ToList();
+                return View(exams);
+            }
 
-            return View(adminExamList);
+            return Unauthorized();
         }
 
         // ---------------- CREATE ----------------
@@ -178,28 +191,101 @@ namespace OnlineExamSystem.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            if (!IsTeacherOrAdmin())
-                return Unauthorized();
-
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(Exam exam)
-        {
-            if (!IsTeacherOrAdmin())
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Teacher")
                 return Unauthorized();
 
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return Unauthorized();
 
-            exam.CreatedByTeacherId = userId.Value;
+            var teacher = _context.Teachers
+                .Include(t => t.TeacherSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                .FirstOrDefault(t => t.UserId == userId.Value);
+
+            if (teacher == null)
+                return Unauthorized();
+
+            ViewBag.Subjects = teacher.TeacherSubjects
+                .Where(ts => ts.Subject != null)
+                .Select(ts => ts.Subject)
+                .OrderBy(s => s.Name)
+                .Select(s => new SelectListItem
+                {
+                    Value = s.Id.ToString(),
+                    Text = s.Name
+                })
+                .ToList();
+
+            return View(new Exam());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(Exam exam)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Teacher")
+                return Unauthorized();
+
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Unauthorized();
+
+            var teacher = _context.Teachers
+                .Include(t => t.TeacherSubjects)
+                    .ThenInclude(ts => ts.Subject)
+                .FirstOrDefault(t => t.UserId == userId.Value);
+
+            if (teacher == null)
+                return Unauthorized();
+
+            bool isAllowedSubject = teacher.TeacherSubjects
+                .Any(ts => ts.SubjectId == exam.SubjectId);
+
+            if (!isAllowedSubject)
+            {
+                ModelState.AddModelError(
+                    "SubjectId",
+                    "You are not allowed to create an exam for this subject."
+                );
+            }
+
+            // Remove fields that are set programmatically from validation
+            ModelState.Remove("CreatedByTeacherId");
+            ModelState.Remove("CreatedByTeacher");
+            ModelState.Remove("CollegeId");
+            ModelState.Remove("College");
+            // These form fields are not present in Create, but required by Model
+            ModelState.Remove("TotalMarks");
+            ModelState.Remove("Subject");
+            ModelState.Remove("Questions");
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Subjects = teacher.TeacherSubjects
+                    .Where(ts => ts.Subject != null)
+                    .Select(ts => ts.Subject)
+                    .OrderBy(s => s.Name)
+                    .Select(s => new SelectListItem
+                    {
+                        Value = s.Id.ToString(),
+                        Text = s.Name
+                    })
+                    .ToList();
+
+                return View(exam);
+            }
+
+            exam.CreatedByTeacherId = teacher.Id;
+            exam.CollegeId = teacher.CollegeId;
+            exam.CreatedAt = DateTime.Now;
 
             _context.Exams.Add(exam);
             _context.SaveChanges();
 
+            TempData["SuccessMessage"] = "Exam created successfully.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -232,25 +318,24 @@ namespace OnlineExamSystem.Controllers
             if (id != exam.Id)
                 return BadRequest();
 
-            var examFromDb = _context.Exams.Find(id);
-            if (examFromDb == null)
+            var dbExam = _context.Exams.Find(id);
+            if (dbExam == null)
                 return NotFound();
 
-            if (!IsOwnerOrAdmin(examFromDb))
+            if (!IsOwnerOrAdmin(dbExam))
                 return Unauthorized();
 
-            if (examFromDb.StartDateTime.HasValue &&
-                examFromDb.StartDateTime.Value <= DateTime.Now)
+            if (dbExam.StartDateTime.HasValue &&
+                dbExam.StartDateTime.Value <= DateTime.Now)
             {
                 TempData["ErrorMessage"] = "This exam has already started and cannot be edited.";
                 return RedirectToAction(nameof(Index));
             }
 
-            examFromDb.Title = exam.Title;
-            examFromDb.Description = exam.Description;
-            examFromDb.DurationInMinutes = exam.DurationInMinutes;
-            examFromDb.TotalMarks = exam.TotalMarks;
-            examFromDb.SubjectId = exam.SubjectId;
+            dbExam.Title = exam.Title;
+            dbExam.Description = exam.Description;
+            dbExam.DurationInMinutes = exam.DurationInMinutes;
+            // dbExam.TotalMarks = exam.TotalMarks; // Do not update marks from edit form (it sends 0)
 
             _context.SaveChanges();
 
@@ -260,27 +345,7 @@ namespace OnlineExamSystem.Controllers
 
         // ---------------- DELETE ----------------
 
-        [HttpGet]
-        public IActionResult Delete(int id)
-        {
-            var exam = _context.Exams.Find(id);
-            if (exam == null)
-                return NotFound();
-
-            if (!IsOwnerOrAdmin(exam))
-                return Unauthorized();
-
-            if (exam.StartDateTime.HasValue &&
-                exam.StartDateTime.Value <= DateTime.Now)
-            {
-                TempData["ErrorMessage"] = "This exam has already started and cannot be deleted.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(exam);
-        }
-
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
@@ -294,7 +359,7 @@ namespace OnlineExamSystem.Controllers
             if (exam.StartDateTime.HasValue &&
                 exam.StartDateTime.Value <= DateTime.Now)
             {
-                TempData["ErrorMessage"] = "This exam has already started and cannot be deleted.";
+                TempData["ErrorMessage"] = "Started exams cannot be deleted.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -305,73 +370,8 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ---------------- ASSIGN (TIMING ONLY) ----------------
-
-        [HttpGet]
-        public IActionResult Assign(int id)
-        {
-            var exam = _context.Exams.Find(id);
-            if (exam == null)
-                return NotFound();
-
-            if (!IsOwnerOrAdmin(exam))
-                return Unauthorized();
-
-            if (exam.StartDateTime.HasValue &&
-                exam.StartDateTime.Value <= DateTime.Now)
-            {
-                TempData["ErrorMessage"] = "This exam has already started and cannot be reassigned.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            bool hasQuestions = _context.Questions.Any(q => q.ExamId == exam.Id);
-            if (!hasQuestions)
-            {
-                TempData["ErrorMessage"] = "You must add at least one question before assigning this exam.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(exam);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Assign(int id, DateTime startDateTime, DateTime endDateTime)
-        {
-            var exam = _context.Exams.Find(id);
-            if (exam == null)
-                return NotFound();
-
-            if (!IsOwnerOrAdmin(exam))
-                return Unauthorized();
-
-            if (exam.StartDateTime.HasValue &&
-                exam.StartDateTime.Value <= DateTime.Now)
-            {
-                TempData["ErrorMessage"] = "This exam has already started and cannot be reassigned.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            if (endDateTime <= startDateTime)
-            {
-                ModelState.AddModelError("", "End time must be after start time.");
-            }
-
-            if (!ModelState.IsValid)
-                return View(exam);
-
-            exam.StartDateTime = startDateTime;
-            exam.EndDateTime = endDateTime;
-
-            _context.SaveChanges();
-
-            TempData["SuccessMessage"] = "Exam scheduled successfully.";
-            return RedirectToAction(nameof(Index));
-        }
-
         // ---------------- RESULTS ----------------
 
-        [HttpGet]
         public IActionResult Results(int examId)
         {
             var exam = _context.Exams

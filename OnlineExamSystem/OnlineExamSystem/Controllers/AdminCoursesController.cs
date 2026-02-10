@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using OnlineExamSystem.Models.ViewModels;
-using Microsoft.EntityFrameworkCore;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -14,54 +14,43 @@ namespace OnlineExamSystem.Controllers
             _context = context;
         }
 
-        // GET: AdminCourses + SEARCH
+        // -------------------------------
+        // INDEX + SEARCH
+        // -------------------------------
         public IActionResult Index(string search)
         {
             var role = HttpContext.Session.GetString("Role");
-
             if (role != "Admin")
-            {
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             var coursesQuery = _context.Courses.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 coursesQuery = coursesQuery.Where(c =>
-                    c.Name != null && c.Name.Contains(search)
-                );
+                    c.Name != null && c.Name.Contains(search));
             }
 
             ViewBag.Search = search;
-
-            var courses = coursesQuery.ToList();
-            return View(courses);
+            return View(coursesQuery.ToList());
         }
 
-        // GET: AdminCourses/Create
+        // -------------------------------
+        // CREATE
+        // -------------------------------
         public IActionResult Create()
         {
-            var role = HttpContext.Session.GetString("Role");
-
-            if (role != "Admin")
-            {
+            if (HttpContext.Session.GetString("Role") != "Admin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             return View();
         }
 
-        // POST: AdminCourses/Create
         [HttpPost]
         public IActionResult Create(Course model)
         {
-            var role = HttpContext.Session.GetString("Role");
-
-            if (role != "Admin")
-            {
+            if (HttpContext.Session.GetString("Role") != "Admin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             if (string.IsNullOrWhiteSpace(model.Name))
             {
@@ -69,10 +58,10 @@ namespace OnlineExamSystem.Controllers
                 return View(model);
             }
 
-            var courseExists = _context.Courses
+            bool exists = _context.Courses
                 .Any(c => c.Name.ToLower() == model.Name.ToLower());
 
-            if (courseExists)
+            if (exists)
             {
                 ModelState.AddModelError("Name", "A course with this name already exists.");
                 return View(model);
@@ -85,43 +74,30 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: AdminCourses/Edit/5
+        // -------------------------------
+        // EDIT
+        // -------------------------------
         public IActionResult Edit(int id)
         {
-            var role = HttpContext.Session.GetString("Role");
-
-            if (role != "Admin")
-            {
+            if (HttpContext.Session.GetString("Role") != "Admin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
-            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
-
+            var course = _context.Courses.Find(id);
             if (course == null)
-            {
                 return NotFound();
-            }
 
             return View(course);
         }
 
-        // POST: AdminCourses/Edit/5
         [HttpPost]
         public IActionResult Edit(int id, Course model)
         {
-            var role = HttpContext.Session.GetString("Role");
-
-            if (role != "Admin")
-            {
+            if (HttpContext.Session.GetString("Role") != "Admin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
-            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
-
+            var course = _context.Courses.Find(id);
             if (course == null)
-            {
                 return NotFound();
-            }
 
             if (string.IsNullOrWhiteSpace(model.Name))
             {
@@ -129,39 +105,33 @@ namespace OnlineExamSystem.Controllers
                 return View(course);
             }
 
-            var duplicateExists = _context.Courses
+            bool duplicate = _context.Courses
                 .Any(c => c.Id != id && c.Name.ToLower() == model.Name.ToLower());
 
-            if (duplicateExists)
+            if (duplicate)
             {
                 ModelState.AddModelError("Name", "A course with this name already exists.");
                 return View(course);
             }
 
             course.Name = model.Name;
-
             _context.SaveChanges();
 
             TempData["Success"] = "Course updated successfully.";
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: AdminCourses/Delete/5
+        // -------------------------------
+        // DELETE
+        // -------------------------------
         public IActionResult Delete(int id)
         {
-            var role = HttpContext.Session.GetString("Role");
-
-            if (role != "Admin")
-            {
+            if (HttpContext.Session.GetString("Role") != "Admin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
-            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
-
+            var course = _context.Courses.Find(id);
             if (course == null)
-            {
                 return NotFound();
-            }
 
             _context.Courses.Remove(course);
             _context.SaveChanges();
@@ -170,13 +140,20 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: AdminCourses/Subjects/5
-public IActionResult Subjects(int id)
+        // =====================================================
+        // PHASE 2.1 — COURSE ⇄ SUBJECT MANAGEMENT
+        // =====================================================
+
+        // -------------------------------
+        // VIEW ASSIGNED SUBJECTS
+        // -------------------------------
+        public IActionResult Subjects(int id)
 {
     var role = HttpContext.Session.GetString("Role");
     if (role != "Admin")
         return RedirectToAction("Index", "Dashboard");
 
+    // 1️⃣ Get course
     var course = _context.Courses
         .AsNoTracking()
         .FirstOrDefault(c => c.Id == id);
@@ -184,16 +161,19 @@ public IActionResult Subjects(int id)
     if (course == null)
         return NotFound();
 
+    // 2️⃣ Get all subjects
     var allSubjects = _context.Subjects
         .AsNoTracking()
         .OrderBy(s => s.Name)
         .ToList();
 
+    // 3️⃣ Get already-selected subject IDs
     var selectedSubjectIds = _context.CourseSubjects
         .Where(cs => cs.CourseId == id)
         .Select(cs => cs.SubjectId)
         .ToList();
 
+    // 4️⃣ CREATE THE VIEWMODEL (this is `vm`)
     var vm = new CourseSubjectsViewModel
     {
         Course = course,
@@ -201,6 +181,7 @@ public IActionResult Subjects(int id)
         SelectedSubjectIds = selectedSubjectIds
     };
 
+    // 5️⃣ Pass it to the view
     return View(vm);
 }
 // POST: AdminCourses/Subjects
@@ -217,22 +198,22 @@ public IActionResult Subjects(int courseId, List<int> selectedSubjectIds)
         return NotFound();
 
     // Remove existing mappings
-    var existingMappings = _context.CourseSubjects
+    var existing = _context.CourseSubjects
         .Where(cs => cs.CourseId == courseId);
 
-    _context.CourseSubjects.RemoveRange(existingMappings);
+    _context.CourseSubjects.RemoveRange(existing);
 
-    // Insert new mappings
+    // Add new mappings
     if (selectedSubjectIds != null && selectedSubjectIds.Any())
     {
-        var newMappings = selectedSubjectIds.Select(subjectId =>
+        var mappings = selectedSubjectIds.Select(subjectId =>
             new CourseSubject
             {
                 CourseId = courseId,
                 SubjectId = subjectId
             });
 
-        _context.CourseSubjects.AddRange(newMappings);
+        _context.CourseSubjects.AddRange(mappings);
     }
 
     _context.SaveChanges();
@@ -242,6 +223,26 @@ public IActionResult Subjects(int courseId, List<int> selectedSubjectIds)
     return RedirectToAction(nameof(Subjects), new { id = courseId });
 }
 
+        
+        // -------------------------------
+        // REMOVE SUBJECT
+        // -------------------------------
+        public IActionResult RemoveSubject(int courseId, int subjectId)
+        {
+            if (HttpContext.Session.GetString("Role") != "Admin")
+                return RedirectToAction("Index", "Dashboard");
 
+            var mapping = _context.CourseSubjects
+                .FirstOrDefault(cs => cs.CourseId == courseId && cs.SubjectId == subjectId);
+
+            if (mapping != null)
+            {
+                _context.CourseSubjects.Remove(mapping);
+                _context.SaveChanges();
+                TempData["Success"] = "Subject removed from course.";
+            }
+
+            return RedirectToAction(nameof(Subjects), new { id = courseId });
+        }
     }
 }

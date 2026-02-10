@@ -17,6 +17,7 @@ namespace OnlineExamSystem.Controllers
         {
             var role = HttpContext.Session.GetString("Role");
 
+            // ================= STUDENT =================
             if (role == "Student")
             {
                 var userId = HttpContext.Session.GetInt32("UserId");
@@ -29,8 +30,30 @@ namespace OnlineExamSystem.Controllers
 
                     ViewBag.Student = student;
                 }
+
+                return View();
             }
 
+            // ================= TEACHER =================
+            if (role == "Teacher")
+            {
+                var userId = HttpContext.Session.GetInt32("UserId"); // ✅ DECLARED HERE
+
+                if (userId != null)
+                {
+                    var teacher = _context.Teachers
+                        .Include(t => t.TeacherSubjects)
+                            .ThenInclude(ts => ts.Subject)
+                        .AsNoTracking()
+                        .FirstOrDefault(t => t.UserId == userId.Value);
+
+                    return View(teacher);
+                }
+
+                return View();
+            }
+
+            // ================= ADMIN / DEFAULT =================
             return View();
         }
     }

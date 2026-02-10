@@ -174,9 +174,9 @@
 }
 
 @* ================= TEACHER VIEW ================= *@
-@if (role == "Teacher")
+@if (role == "Teacher" || role == "Admin")
 {
-    var exams = (Model as IEnumerable<Exam>) ?? Enumerable.Empty<Exam>();
+    var exams = Model as IEnumerable<Exam> ?? Enumerable.Empty<Exam>();
 
     var unscheduled = exams
         .Where(e => !e.StartDateTime.HasValue)
@@ -188,7 +188,11 @@
         .OrderByDescending(e => e.StartDateTime)
         .ToList();
 
-    <a asp-action="Create" class="btn btn-primary mb-3">Create Exam</a>
+    @* CREATE EXAM — TEACHER ONLY *@
+    @if (role == "Teacher")
+    {
+        <a asp-action="Create" class="btn btn-primary mb-3">Create Exam</a>
+    }
 
     <h4>Unscheduled Exams</h4>
     @if (!unscheduled.Any())
@@ -202,6 +206,11 @@
                 <tr>
                     <th>Title</th>
                     <th>Subject</th>
+                    <th>Total Marks</th>
+                    @if (role == "Admin")
+                    {
+                        <th>Teacher</th>
+                    }
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -211,10 +220,24 @@
                     <tr>
                         <td>@exam.Title</td>
                         <td>@exam.Subject?.Name</td>
+                        <td>@exam.TotalMarks</td>
+
+                        @if (role == "Admin")
+                        {
+                            <td>@exam.CreatedByTeacher?.Name</td>
+                        }
+
                         <td>
-                            <a asp-action="Edit" asp-route-id="@exam.Id" class="btn btn-sm btn-warning">Edit</a>
-                            <a asp-action="Assign" asp-route-id="@exam.Id" class="btn btn-sm btn-secondary">Schedule</a>
-                            <a asp-controller="Questions" asp-action="Index"
+                            <a asp-action="Edit"
+                               asp-route-id="@exam.Id"
+                               class="btn btn-sm btn-warning">Edit</a>
+
+                            <a asp-action="Assign"
+                               asp-route-id="@exam.Id"
+                               class="btn btn-sm btn-secondary">Schedule</a>
+
+                            <a asp-controller="Questions"
+                               asp-action="Index"
                                asp-route-examId="@exam.Id"
                                class="btn btn-sm btn-info">Questions</a>
                         </td>
@@ -236,6 +259,11 @@
                 <tr>
                     <th>Title</th>
                     <th>Subject</th>
+                    <th>Total Marks</th>
+                    @if (role == "Admin")
+                    {
+                        <th>Teacher</th>
+                    }
                     <th>Schedule</th>
                     <th>Actions</th>
                 </tr>
@@ -246,9 +274,17 @@
                     <tr>
                         <td>@exam.Title</td>
                         <td>@exam.Subject?.Name</td>
+                        <td>@exam.TotalMarks</td>
+
+                        @if (role == "Admin")
+                        {
+                            <td>@exam.CreatedByTeacher?.Name</td>
+                        }
+
                         <td>@exam.StartDateTime → @exam.EndDateTime</td>
                         <td>
-                            <a asp-action="Results" asp-route-examId="@exam.Id"
+                            <a asp-action="Results"
+                               asp-route-examId="@exam.Id"
                                class="btn btn-sm btn-dark">Results</a>
                         </td>
                     </tr>
@@ -256,34 +292,4 @@
             </tbody>
         </table>
     }
-}
-
-@* ================= ADMIN VIEW ================= *@
-@if (role == "Admin")
-{
-    var exams = Model as IEnumerable<AdminExamListItemViewModel>;
-
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Teacher</th>
-                <th>Description</th>
-                <th>Duration</th>
-                <th>Total Marks</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var exam in exams)
-            {
-                <tr>
-                    <td>@exam.Title</td>
-                    <td>@exam.TeacherName</td>
-                    <td>@exam.Description</td>
-                    <td>@exam.DurationInMinutes</td>
-                    <td>@exam.TotalMarks</td>
-                </tr>
-            }
-        </tbody>
-    </table>
 }

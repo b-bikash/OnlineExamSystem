@@ -1,0 +1,46 @@
+@model List<OnlineExamSystem.Models.Subject>
+
+<h2>Subject Management</h2>
+
+<a asp-action="Create" class="btn btn-primary mb-3">
+    + Add Subject
+</a>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var subject in Model)
+    {
+        <tr>
+            <td>@subject.Name</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@subject.Id"
+                   class="btn btn-sm btn-warning">Edit</a>
+
+                <a asp-action="Delete" asp-route-id="@subject.Id"
+                   class="btn btn-sm btn-danger"
+                   onclick="return confirm('Delete this subject?');">
+                    Delete
+                </a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

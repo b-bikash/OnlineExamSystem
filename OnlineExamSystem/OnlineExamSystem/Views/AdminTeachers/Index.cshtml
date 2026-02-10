@@ -1,0 +1,49 @@
+@model List<OnlineExamSystem.Models.Teacher>
+
+@{
+    ViewData["Title"] = "Teacher Management";
+}
+
+<h2>Teacher Management</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Subjects</th>
+            <th style="width:180px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var teacher in Model)
+        {
+            <tr>
+                <td>@teacher.Name</td>
+                <td>@teacher.User?.Email</td>
+                <td>
+                    @if (teacher.TeacherSubjects.Any())
+                    {
+                        <ul class="mb-0">
+                            @foreach (var ts in teacher.TeacherSubjects)
+                            {
+                                <li>@ts.Subject.Name</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No subjects assigned</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="AssignSubjects"
+                       asp-route-id="@teacher.Id"
+                       class="btn btn-sm btn-warning">
+                        Assign Subjects
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

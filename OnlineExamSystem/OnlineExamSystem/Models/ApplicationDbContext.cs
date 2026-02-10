@@ -21,9 +21,9 @@ namespace OnlineExamSystem.Models
         public DbSet<Course> Courses { get; set; }
         public DbSet<College> Colleges { get; set; }
         public DbSet<Subject> Subjects { get; set; }
-
+        public DbSet<CollegeCourse> CollegeCourses { get; set; }
         public DbSet<TeacherSubject> TeacherSubjects { get; set; }
-        public DbSet<CourseSubject> CourseSubjects { get; set; } // ✅ ADD THIS
+        public DbSet<CourseSubject> CourseSubjects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,17 +32,13 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             // STUDENT
             // -------------------------------
-
-            // Unique RollNumber per College
             modelBuilder.Entity<Student>()
                 .HasIndex(s => new { s.CollegeId, s.RollNumber })
                 .IsUnique();
 
             // -------------------------------
-            // STUDENT ANSWERS
+            // STUDENT ANSWER (UNIQUE)
             // -------------------------------
-
-            // ONE answer per question per attempt
             modelBuilder.Entity<StudentAnswer>()
                 .HasIndex(sa => new { sa.ExamAttemptId, sa.QuestionId })
                 .IsUnique();
@@ -50,7 +46,6 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             // OPTION → QUESTION
             // -------------------------------
-
             modelBuilder.Entity<Option>()
                 .HasOne(o => o.Question)
                 .WithMany(q => q.Options)
@@ -60,7 +55,6 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             // STUDENT ANSWER → OPTION
             // -------------------------------
-
             modelBuilder.Entity<StudentAnswer>()
                 .HasOne(sa => sa.SelectedOption)
                 .WithMany()
@@ -70,7 +64,6 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             // STUDENT ANSWER → QUESTION
             // -------------------------------
-
             modelBuilder.Entity<StudentAnswer>()
                 .HasOne(sa => sa.Question)
                 .WithMany()
@@ -80,7 +73,6 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             // TEACHER ↔ SUBJECT (MANY-TO-MANY)
             // -------------------------------
-
             modelBuilder.Entity<TeacherSubject>()
                 .HasKey(ts => new { ts.TeacherId, ts.SubjectId });
 
@@ -97,9 +89,23 @@ namespace OnlineExamSystem.Models
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
+            // EXAM ATTEMPT
+            // -------------------------------
+            modelBuilder.Entity<ExamAttempt>()
+                .HasOne(ea => ea.Student)
+                .WithMany(s => s.ExamAttempts)
+                .HasForeignKey(ea => ea.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ExamAttempt>()
+                .HasOne(ea => ea.Exam)
+                .WithMany(e => e.ExamAttempts)
+                .HasForeignKey(ea => ea.ExamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // -------------------------------
             // COURSE ↔ SUBJECT (MANY-TO-MANY)
             // -------------------------------
-
             modelBuilder.Entity<CourseSubject>()
                 .HasKey(cs => new { cs.CourseId, cs.SubjectId });
 
@@ -115,18 +121,44 @@ namespace OnlineExamSystem.Models
                 .HasForeignKey(cs => cs.SubjectId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<ExamAttempt>()
-                .HasOne(ea => ea.Student)
-                .WithMany(s => s.ExamAttempts)
-                .HasForeignKey(ea => ea.StudentId)
+            // -------------------------------
+            // COLLEGE ↔ COURSE (MANY-TO-MANY)
+            // -------------------------------
+            modelBuilder.Entity<CollegeCourse>()
+                .HasKey(cc => new { cc.CollegeId, cc.CourseId });
+
+            modelBuilder.Entity<CollegeCourse>()
+                .HasOne(cc => cc.College)
+                .WithMany(c => c.CollegeCourses)
+                .HasForeignKey(cc => cc.CollegeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<ExamAttempt>()
-                .HasOne(ea => ea.Exam)
-                .WithMany(e => e.ExamAttempts)
-                .HasForeignKey(ea => ea.ExamId)
+            modelBuilder.Entity<CollegeCourse>()
+                .HasOne(cc => cc.Course)
+                .WithMany(c => c.CollegeCourses)
+                .HasForeignKey(cc => cc.CourseId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // -------------------------------
+            // EXAM RELATIONSHIPS
+            // -------------------------------
+            modelBuilder.Entity<Exam>()
+                .HasOne(e => e.Subject)
+                .WithMany()
+                .HasForeignKey(e => e.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Exam>()
+                .HasOne(e => e.College)
+                .WithMany()
+                .HasForeignKey(e => e.CollegeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Exam>()
+                .HasOne(e => e.CreatedByTeacher)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByTeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

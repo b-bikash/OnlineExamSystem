@@ -1,56 +1,77 @@
 @model OnlineExamSystem.Models.ViewModels.CourseSubjectsViewModel
 
-@{
-    ViewData["Title"] = "Manage Subjects";
-}
-
-<h2 class="mb-3">
-    Manage Subjects for Course:
-    <span class="text-primary">@Model.Course.Name</span>
-</h2>
-
-<hr />
+<h2>Manage Subjects for @Model.Course.Name</h2>
 
 <form asp-action="Subjects" method="post">
     @Html.AntiForgeryToken()
 
-    <input type="hidden" name="CourseId" value="@Model.Course.Id" />
+    <input type="hidden" name="courseId" value="@Model.Course.Id" />
 
-    @if (!Model.AllSubjects.Any())
+    <!-- ================= ASSIGNED SUBJECTS ================= -->
+    <h5 class="mt-3">Assigned Subjects</h5>
+
+    @if (Model.SelectedSubjectIds.Any())
     {
-        <div class="alert alert-warning">
-            No subjects available. Please create subjects first.
-        </div>
+        @foreach (var subject in Model.AllSubjects
+            .Where(s => Model.SelectedSubjectIds.Contains(s.Id)))
+        {
+            <div class="form-check mb-2 p-2 rounded bg-light border border-success">
+                <input class="form-check-input"
+                       type="checkbox"
+                       name="selectedSubjectIds"
+                       value="@subject.Id"
+                       id="subject_@subject.Id"
+                       checked />
+
+                <label class="form-check-label fw-semibold"
+                       for="subject_@subject.Id">
+                    @subject.Name
+                </label>
+
+                <span class="badge bg-success ms-2">
+                    Assigned
+                </span>
+            </div>
+        }
     }
     else
     {
-        <div class="row">
-            @foreach (var subject in Model.AllSubjects)
-            {
-                <div class="col-md-4 mb-2">
-                    <div class="form-check">
-                        <input class="form-check-input"
-                               type="checkbox"
-                               name="SelectedSubjectIds"
-                               value="@subject.Id"
-                               @(Model.SelectedSubjectIds.Contains(subject.Id) ? "checked" : "") />
+        <p class="text-muted fst-italic">
+            No subjects assigned yet.
+        </p>
+    }
 
-                        <label class="form-check-label">
-                            @subject.Name
-                        </label>
-                    </div>
-                </div>
-            }
+    <!-- ================= AVAILABLE SUBJECTS ================= -->
+    <h5 class="mt-4">Available Subjects</h5>
+
+    @foreach (var subject in Model.AllSubjects
+        .Where(s => !Model.SelectedSubjectIds.Contains(s.Id)))
+    {
+        <div class="form-check mb-2 p-2 rounded border">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="selectedSubjectIds"
+                   value="@subject.Id"
+                   id="subject_@subject.Id" />
+
+            <label class="form-check-label"
+                   for="subject_@subject.Id">
+                @subject.Name
+            </label>
         </div>
     }
 
+    <!-- ================= ACTIONS ================= -->
     <div class="mt-4">
         <button type="submit" class="btn btn-primary">
             Save Subjects
         </button>
 
-        <a asp-action="Index" class="btn btn-secondary ms-2">
+        <a asp-action="Index"
+           class="btn btn-secondary ms-2">
             Back to Courses
         </a>
     </div>
 </form>
+
+

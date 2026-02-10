@@ -18,6 +18,19 @@
         </select>
         <span asp-validation-for="Role" class="text-danger"></span>
     </div>
+    
+    <!-- COLLEGE (ONLY FOR TEACHER) -->
+<div class="mb-3" id="collegeSection" style="display:none;">
+    <label class="form-label">College</label>
+    <select asp-for="CollegeId" class="form-control">
+        <option value="">Select College</option>
+        @foreach (var college in ViewBag.Colleges)
+        {
+            <option value="@college.Id">@college.Name</option>
+        }
+    </select>
+    <span asp-validation-for="CollegeId" class="text-danger"></span>
+</div>
 
     <!-- FULL NAME -->
     <div class="mb-3">
@@ -58,6 +71,22 @@
         <p class="text-danger">@error.ErrorMessage</p>
     }
 </form>
+
+<script>
+    const roleSelect = document.querySelector('[name="Role"]');
+    const collegeSection = document.getElementById('collegeSection');
+
+    function toggleCollege() {
+        if (roleSelect.value === 'Teacher') {
+            collegeSection.style.display = 'block';
+        } else {
+            collegeSection.style.display = 'none';
+        }
+    }
+
+    roleSelect.addEventListener('change', toggleCollege);
+    toggleCollege();
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

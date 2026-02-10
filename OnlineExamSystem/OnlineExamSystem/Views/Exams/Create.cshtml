@@ -1,29 +1,47 @@
-﻿
-@model OnlineExamSystem.Models.Exam
+﻿@model OnlineExamSystem.Models.Exam
+
+@{
+    ViewData["Title"] = "Create Exam";
+}
 
 <h2>Create Exam</h2>
 
-<form action="/Exams/Create" method="post">
+<form asp-action="Create" method="post">
     @Html.AntiForgeryToken()
+
     <div class="mb-3">
-        <label>Title</label>
-        <input class="form-control" name="Title" required />
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label>Description</label>
-        <textarea class="form-control" name="Description"></textarea>
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label>Duration In Minutes</label>
-        <input class="form-control" name="DurationInMinutes" type="number" min="1" required />
+        <label asp-for="DurationInMinutes" class="form-label"></label>
+        <input asp-for="DurationInMinutes" class="form-control" type="number" />
+        <span asp-validation-for="DurationInMinutes" class="text-danger"></span>
     </div>
 
-    @* TotalMarks intentionally removed
-       This is now system-calculated from question marks *@
+    <!-- ✅ SUBJECT DROPDOWN (CRITICAL FIX) -->
+    <div class="mb-3">
+        <label asp-for="SubjectId" class="form-label">Subject</label>
+        <select asp-for="SubjectId"
+                asp-items="ViewBag.Subjects"
+                class="form-control">
+            <option value="">-- Select Subject --</option>
+        </select>
+        <span asp-validation-for="SubjectId" class="text-danger"></span>
+    </div>
 
     <button type="submit" class="btn btn-success">Save</button>
-    <a href="/Exams" class="btn btn-secondary">Cancel</a>
-
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
