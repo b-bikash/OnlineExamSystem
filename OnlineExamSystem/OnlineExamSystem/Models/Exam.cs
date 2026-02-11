@@ -51,8 +51,8 @@ namespace OnlineExamSystem.Models
         // -------------------------------
         // METADATA
         // -------------------------------
-        public int CollegeId { get; set; }
-public College College { get; set; }
+        public int? CollegeId { get; set; }
+        public College College { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
