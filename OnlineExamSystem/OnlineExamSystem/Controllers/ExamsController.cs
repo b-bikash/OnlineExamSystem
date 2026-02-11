@@ -261,6 +261,8 @@ namespace OnlineExamSystem.Controllers
             ModelState.Remove("TotalMarks");
             ModelState.Remove("Subject");
             ModelState.Remove("Questions");
+            ModelState.Remove("ExamAttempts");
+
 
             if (!ModelState.IsValid)
             {
