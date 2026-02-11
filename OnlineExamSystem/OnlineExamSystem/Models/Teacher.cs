@@ -10,8 +10,9 @@
 
         public User User { get; set; }
 
-        public int CollegeId { get; set; }
+        public int? CollegeId { get; set; }
         public College College { get; set; }
+
 
         public ICollection<TeacherSubject> TeacherSubjects { get; set; }
 

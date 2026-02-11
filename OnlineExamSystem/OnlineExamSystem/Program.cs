@@ -39,7 +39,7 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
     // Ensure DB exists (dev-safe)
-    context.Database.EnsureCreated();
+    //context.Database.EnsureCreated();
 
     // Seed Admin only if none exists
     if (!context.Users.Any(u => u.Role == "Admin"))
