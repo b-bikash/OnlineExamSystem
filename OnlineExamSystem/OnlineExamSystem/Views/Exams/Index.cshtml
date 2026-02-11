@@ -183,9 +183,19 @@
         .OrderByDescending(e => e.CreatedAt)
         .ToList();
 
-    var scheduled = exams
-        .Where(e => e.StartDateTime.HasValue)
-        .OrderByDescending(e => e.StartDateTime)
+    var live = exams
+        .Where(e => e.StartDateTime.HasValue && e.StartDateTime <= now && e.EndDateTime >= now)
+        .OrderBy(e => e.EndDateTime)
+        .ToList();
+
+    var upcoming = exams
+        .Where(e => e.StartDateTime.HasValue && e.StartDateTime > now)
+        .OrderBy(e => e.StartDateTime)
+        .ToList();
+
+    var past = exams
+        .Where(e => e.StartDateTime.HasValue && e.EndDateTime < now)
+        .OrderByDescending(e => e.EndDateTime)
         .ToList();
 
     @* CREATE EXAM — TEACHER ONLY *@
@@ -232,14 +242,14 @@
                                asp-route-id="@exam.Id"
                                class="btn btn-sm btn-warning">Edit</a>
 
-                            <a asp-action="Assign"
-                               asp-route-id="@exam.Id"
-                               class="btn btn-sm btn-secondary">Schedule</a>
-
                             <a asp-controller="Questions"
                                asp-action="Index"
                                asp-route-examId="@exam.Id"
                                class="btn btn-sm btn-info">Questions</a>
+
+                            <a asp-action="Assign"
+                               asp-route-id="@exam.Id"
+                               class="btn btn-sm btn-secondary">Schedule</a>
                         </td>
                     </tr>
                 }
@@ -247,14 +257,14 @@
         </table>
     }
 
-    <h4 class="mt-4">Scheduled Exams</h4>
-    @if (!scheduled.Any())
+    <h4 class="mt-4 text-success">Live Exams</h4>
+    @if (!live.Any())
     {
-        <p>No scheduled exams.</p>
+        <p>No live exams.</p>
     }
     else
     {
-        <table class="table table-bordered">
+        <table class="table table-bordered border-success">
             <thead>
                 <tr>
                     <th>Title</th>
@@ -264,24 +274,111 @@
                     {
                         <th>Teacher</th>
                     }
-                    <th>Schedule</th>
+                    <th>Ends At</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var exam in scheduled)
+                @foreach (var exam in live)
                 {
                     <tr>
                         <td>@exam.Title</td>
                         <td>@exam.Subject?.Name</td>
                         <td>@exam.TotalMarks</td>
-
                         @if (role == "Admin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
                         }
+                        <td>@exam.EndDateTime</td>
+                        <td>
+                            <a asp-action="Results"
+                               asp-route-examId="@exam.Id"
+                               class="btn btn-sm btn-dark">Results</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 
-                        <td>@exam.StartDateTime → @exam.EndDateTime</td>
+    <h4 class="mt-4 text-primary">Upcoming Exams</h4>
+    @if (!upcoming.Any())
+    {
+        <p>No upcoming exams.</p>
+    }
+    else
+    {
+        <table class="table table-bordered border-primary">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Subject</th>
+                    <th>Total Marks</th>
+                    @if (role == "Admin")
+                    {
+                        <th>Teacher</th>
+                    }
+                    <th>Starts At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var exam in upcoming)
+                {
+                    <tr>
+                        <td>@exam.Title</td>
+                        <td>@exam.Subject?.Name</td>
+                        <td>@exam.TotalMarks</td>
+                        @if (role == "Admin")
+                        {
+                            <td>@exam.CreatedByTeacher?.Name</td>
+                        }
+                        <td>@exam.StartDateTime</td>
+                        <td>
+                            <a asp-action="Assign"
+                               asp-route-id="@exam.Id"
+                               asp-route-edit="true"
+                               class="btn btn-sm btn-warning">Reschedule</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h4 class="mt-4 text-secondary">Past Exams</h4>
+    @if (!past.Any())
+    {
+        <p>No past exams.</p>
+    }
+    else
+    {
+        <table class="table table-bordered border-secondary">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Subject</th>
+                    <th>Total Marks</th>
+                    @if (role == "Admin")
+                    {
+                        <th>Teacher</th>
+                    }
+                    <th>Finished At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var exam in past)
+                {
+                    <tr>
+                        <td>@exam.Title</td>
+                        <td>@exam.Subject?.Name</td>
+                        <td>@exam.TotalMarks</td>
+                        @if (role == "Admin")
+                        {
+                            <td>@exam.CreatedByTeacher?.Name</td>
+                        }
+                        <td>@exam.EndDateTime</td>
                         <td>
                             <a asp-action="Results"
                                asp-route-examId="@exam.Id"

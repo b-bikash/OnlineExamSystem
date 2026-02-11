@@ -207,6 +207,12 @@ namespace OnlineExamSystem.Controllers
             if (teacher == null)
                 return Unauthorized();
 
+            if (teacher.CollegeId == null)
+            {
+                TempData["ErrorMessage"] = "You must be associated with a college to create an exam.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
             ViewBag.Subjects = teacher.TeacherSubjects
                 .Where(ts => ts.Subject != null)
                 .Select(ts => ts.Subject)
@@ -241,17 +247,6 @@ namespace OnlineExamSystem.Controllers
             if (teacher == null)
                 return Unauthorized();
 
-            bool isAllowedSubject = teacher.TeacherSubjects
-                .Any(ts => ts.SubjectId == exam.SubjectId);
-
-            if (!isAllowedSubject)
-            {
-                ModelState.AddModelError(
-                    "SubjectId",
-                    "You are not allowed to create an exam for this subject."
-                );
-            }
-
             // Remove fields that are set programmatically from validation
             ModelState.Remove("CreatedByTeacherId");
             ModelState.Remove("CreatedByTeacher");
@@ -262,6 +257,23 @@ namespace OnlineExamSystem.Controllers
             ModelState.Remove("Subject");
             ModelState.Remove("Questions");
             ModelState.Remove("ExamAttempts");
+
+            if (teacher.CollegeId == null)
+            {
+                ModelState.AddModelError("", "You must be associated with a college to create an exam.");
+                // Repopulate ViewBag
+                ViewBag.Subjects = teacher.TeacherSubjects
+                    .Where(ts => ts.Subject != null)
+                    .Select(ts => ts.Subject)
+                    .OrderBy(s => s.Name)
+                    .Select(s => new SelectListItem
+                    {
+                        Value = s.Id.ToString(),
+                        Text = s.Name
+                    })
+                    .ToList();
+                return View(exam);
+            }
 
 
             if (!ModelState.IsValid)
@@ -281,7 +293,7 @@ namespace OnlineExamSystem.Controllers
             }
 
             exam.CreatedByTeacherId = teacher.Id;
-            exam.CollegeId = teacher.CollegeId;
+            exam.CollegeId = teacher.CollegeId.Value;
             exam.CreatedAt = DateTime.Now;
 
             _context.Exams.Add(exam);
@@ -369,6 +381,69 @@ namespace OnlineExamSystem.Controllers
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = "Exam deleted successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ---------------- ASSIGN (SCHEDULE) ----------------
+
+        [HttpGet]
+        public IActionResult Assign(int id)
+        {
+            var exam = _context.Exams
+                .Include(e => e.Subject)
+                .FirstOrDefault(e => e.Id == id);
+
+            if (exam == null)
+                return NotFound();
+
+            if (!IsOwnerOrAdmin(exam))
+                return Unauthorized();
+
+            return View(exam);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Assign(int id, DateTime startDateTime, DateTime endDateTime)
+        {
+            var exam = _context.Exams
+                .Include(e => e.Questions)
+                .FirstOrDefault(e => e.Id == id);
+
+            if (exam == null)
+                return NotFound();
+
+            if (!IsOwnerOrAdmin(exam))
+                return Unauthorized();
+
+            if (startDateTime >= endDateTime)
+            {
+                ModelState.AddModelError("EndDateTime", "End time must be after start time.");
+            }
+
+            if (startDateTime < DateTime.Now)
+            {
+                ModelState.AddModelError("StartDateTime", "Start time cannot be in the past.");
+            }
+
+            if (!exam.Questions.Any())
+            {
+                ModelState.AddModelError("", "Cannot schedule an exam with no questions. Please add questions first.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Reload subject for display if needed, though mostly read-only in view
+                 _context.Entry(exam).Reference(e => e.Subject).Load();
+                return View(exam);
+            }
+
+            exam.StartDateTime = startDateTime;
+            exam.EndDateTime = endDateTime;
+
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = "Exam scheduled successfully.";
             return RedirectToAction(nameof(Index));
         }
 

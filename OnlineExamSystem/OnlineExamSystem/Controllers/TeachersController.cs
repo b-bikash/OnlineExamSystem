@@ -42,6 +42,17 @@ namespace OnlineExamSystem.Controllers
             ViewBag.Username = user.Username;
             ViewBag.Email = user.Email;
 
+            ViewBag.Colleges = _context.Colleges
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Name)
+                .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Name,
+                    Selected = c.Id == teacher.CollegeId
+                })
+                .ToList();
+
             return View(teacher);
         }
 
@@ -50,7 +61,7 @@ namespace OnlineExamSystem.Controllers
         // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateProfile(string name, string username, string email)
+        public IActionResult UpdateProfile(string name, string username, string email, int? collegeId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -94,12 +105,23 @@ namespace OnlineExamSystem.Controllers
             {
                 ViewBag.Username = username;
                 ViewBag.Email = email;
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.Name)
+                    .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = c.Id.ToString(),
+                        Text = c.Name,
+                        Selected = c.Id == (collegeId ?? teacher.CollegeId)
+                    })
+                    .ToList();
 
                 return View("Profile", teacher);
             }
 
             // ✅ SAVE
             teacher.Name = name;
+            teacher.CollegeId = collegeId;
             user.Username = username;
             user.Email = email;
 

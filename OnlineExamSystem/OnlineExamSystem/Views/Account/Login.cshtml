@@ -27,13 +27,19 @@
                            autofocus />
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label">Password</label>
                     <input type="password"
                            name="password"
                            class="form-control"
+                           id="passwordInput"
                            placeholder="Enter password"
                            required />
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="showPassword">
+                    <label class="form-check-label" for="showPassword">Show Password</label>
                 </div>
 
                 <div class="d-grid">
@@ -41,6 +47,17 @@
                         Login
                     </button>
                 </div>
+
+                <script>
+                    document.getElementById('showPassword').addEventListener('change', function () {
+                        var passwordInput = document.getElementById('passwordInput');
+                        if (this.checked) {
+                            passwordInput.type = 'text';
+                        } else {
+                            passwordInput.type = 'password';
+                        }
+                    });
+                </script>
 
                 <div class="text-center mt-3">
                     <span class="text-muted">New user?</span>

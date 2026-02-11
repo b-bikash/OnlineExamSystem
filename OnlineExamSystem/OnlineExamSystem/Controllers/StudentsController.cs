@@ -33,9 +33,7 @@ namespace OnlineExamSystem.Controllers
                 return NotFound();
 
             // COURSES (unchanged, already working)
-            var courses = _context.Courses
-    .Where(c => c.Id == student.CourseId)
-    .ToList();
+            var courses = _context.Courses.ToList();
 
 
             // COLLEGES — 🔥 FIXED LOGIC
@@ -69,9 +67,7 @@ namespace OnlineExamSystem.Controllers
             if (student == null)
                 return NotFound();
 
-            ViewBag.Courses = _context.Courses
-    .Where(c => c.Id == student.CourseId)
-    .ToList();
+            ViewBag.Courses = _context.Courses.ToList();
 
 
             ViewBag.Colleges = _context.Colleges
@@ -108,9 +104,7 @@ namespace OnlineExamSystem.Controllers
                     "This roll number already exists for the selected college."
                 );
 
-                ViewBag.Courses = _context.Courses
-    .Where(c => c.Id == model.CourseId)
-    .ToList();
+                ViewBag.Courses = _context.Courses.ToList();
 
 
                 ViewBag.Colleges = _context.Colleges
@@ -166,9 +160,7 @@ namespace OnlineExamSystem.Controllers
                     "This roll number already exists for the selected college."
                 );
 
-                ViewBag.Courses = _context.Courses
-    .Where(c => c.Id == model.CourseId)
-    .ToList();
+                ViewBag.Courses = _context.Courses.ToList();
 
 
                 ViewBag.Colleges = _context.Colleges

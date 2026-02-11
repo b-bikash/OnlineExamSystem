@@ -24,6 +24,15 @@
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
 
+    <!-- COLLEGE -->
+    <div class="mb-3">
+        <label class="form-label">College</label>
+        <select name="collegeId" asp-items="@ViewBag.Colleges" class="form-control">
+            <option value="">-- Select College --</option>
+        </select>
+        <span class="text-muted small">Select your college association.</span>
+    </div>
+
     <!-- USERNAME -->
     <div class="mb-3">
         <label class="form-label">Username</label>

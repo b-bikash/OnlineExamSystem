@@ -33,15 +33,21 @@
                disabled />
     </div>
 
+    @{
+        var minTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+    }
+
     <!-- Start time -->
     <div class="mb-3">
         <label class="form-label">Start Date & Time</label>
         <input type="datetime-local"
+               id="startDateTime"
                name="startDateTime"
                class="form-control"
                value="@(Model.StartDateTime.HasValue
                     ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
                     : "")"
+               min="@minTime"
                @(isEditMode ? "" : "readonly")
                required />
     </div>
@@ -50,14 +56,41 @@
     <div class="mb-3">
         <label class="form-label">End Date & Time</label>
         <input type="datetime-local"
+               id="endDateTime"
                name="endDateTime"
                class="form-control"
                value="@(Model.EndDateTime.HasValue
                     ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
                     : "")"
+               min="@minTime"
                @(isEditMode ? "" : "readonly")
                required />
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var startInput = document.getElementById('startDateTime');
+            var endInput = document.getElementById('endDateTime');
+
+            if (startInput && endInput) {
+                // Ensure min time is set for fresh page loads
+                var now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                var currentDateTime = now.toISOString().slice(0, 16);
+                
+                if (!startInput.value) {
+                    startInput.min = currentDateTime;
+                }
+
+                // Update End Time min value when Start Time changes
+                startInput.addEventListener('change', function () {
+                    if (this.value) {
+                        endInput.min = this.value;
+                    }
+                });
+            }
+        });
+    </script>
 
     <!-- Validation -->
     <div class="text-danger">

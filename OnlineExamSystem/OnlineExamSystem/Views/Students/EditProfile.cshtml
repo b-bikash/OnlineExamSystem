@@ -20,13 +20,7 @@
 
             @foreach (var course in ViewBag.Courses)
             {
-                var isInactiveSelected =
-                Model.CourseId == course.Id && !course.IsApproved;
-
-                <option value="@course.Id"
-                        disabled="@(course.IsApproved ? false : !isInactiveSelected)">
-                    @course.Name @(course.IsApproved ? "" : "(Inactive)")
-                </option>
+                <option value="@course.Id">@course.Name</option>
             }
         </select>
     </div>
