@@ -22,6 +22,6 @@ namespace OnlineExamSystem.Models
         // Options for this question (2–4)
         public ICollection<Option> Options { get; set; }
 
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

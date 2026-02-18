@@ -54,6 +54,7 @@
     <thead>
         <tr>
             <th style="width: 80px;">S.No</th>
+            <th style="width: 100px;">Image</th>
             <th>Question</th>
             <th style="width: 100px;">Marks</th>
             <th style="width: 160px;">Actions</th>
@@ -65,6 +66,16 @@
         {
             <tr>
                 <td>@serialNo</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(q.ImageUrl))
+                    {
+                        <img src="~/uploads/questions/@q.ImageUrl" alt="Question Image" style="max-width: 80px; max-height: 80px;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted text-center d-block">-</span>
+                    }
+                </td>
                 <td>@q.Text</td>
                 <td>@q.Marks</td>
                 <td>

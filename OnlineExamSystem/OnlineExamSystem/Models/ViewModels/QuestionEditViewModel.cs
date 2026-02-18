@@ -7,7 +7,7 @@ namespace OnlineExamSystem.Models
 {
     public class QuestionEditViewModel
     {
-        public IFormFile ImageFile { get; set; }
+        public IFormFile? ImageFile { get; set; }
         public string ExistingImageUrl { get; set; }
         // -----------------------------
         // Question identity

@@ -23,7 +23,7 @@
     <!-- Image Upload -->
     <div class="form-group mt-3">
         <label asp-for="ImageFile">Question Image (Optional)</label>
-        <input asp-for="ImageFile" type="file" class="form-control" />
+        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
         <span asp-validation-for="ImageFile" class="text-danger"></span>
     </div>
 

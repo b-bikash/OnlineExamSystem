@@ -43,7 +43,7 @@
                 <img src="~/uploads/questions/@Model.ExistingImageUrl" alt="Current Image" style="max-width: 200px; height: auto;" />
             </div>
         }
-        <input asp-for="ImageFile" type="file" class="form-control" />
+        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
         <span asp-validation-for="ImageFile" class="text-danger"></span>
     </div>
 

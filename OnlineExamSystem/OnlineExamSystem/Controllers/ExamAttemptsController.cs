@@ -179,6 +179,12 @@ namespace OnlineExamSystem.Controllers
             if (attempt == null || attempt.EndTime != null)
                 return Unauthorized();
 
+            // Handle null answers (e.g., student submitted without answering anything)
+            if (answers == null)
+            {
+                answers = new Dictionary<int, int>();
+            }
+
             var oldAnswers = _context.StudentAnswers
                 .Where(sa => sa.ExamAttemptId == attemptId);
 
@@ -197,6 +203,7 @@ namespace OnlineExamSystem.Controllers
 
             _context.SaveChanges();
 
+            // Calculate score (will be 0 if answers is empty)
             attempt.Score =
                 (from sa in _context.StudentAnswers
                  join opt in _context.Options on sa.SelectedOptionId equals opt.Id

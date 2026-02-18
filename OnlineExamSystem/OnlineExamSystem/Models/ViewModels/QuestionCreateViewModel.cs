@@ -7,7 +7,7 @@ namespace OnlineExamSystem.Models
 {
     public class QuestionCreateViewModel
     {
-        public IFormFile ImageFile { get; set; }
+        public IFormFile? ImageFile { get; set; }
         // -----------------------------
         // Question-level data
         // -----------------------------
