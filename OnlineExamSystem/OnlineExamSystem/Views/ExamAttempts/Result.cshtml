@@ -12,11 +12,82 @@
     <p><strong>Exam Title:</strong> @Model.Exam.Title</p>
     <p><strong>Start Time:</strong> @Model.StartTime</p>
     <p><strong>End Time:</strong> @Model.EndTime</p>
-    <p><strong>Score:</strong> @Model.Score</p>
+    <p><strong>Score:</strong> @Model.Score / @Model.Exam.TotalMarks</p>
 </div>
 
 <hr />
 
-<a asp-controller="Home" asp-action="Index" class="btn btn-primary">
-    Back to Home
-</a>
+<h3>Detailed Analysis</h3>
+
+@if (Model.Exam.Questions != null && Model.Exam.Questions.Any())
+{
+    int i = 1;
+    foreach (var question in Model.Exam.Questions)
+    {
+        var studentAnswer = Model.StudentAnswers.FirstOrDefault(sa => sa.QuestionId == question.Id);
+        var selectedOptionId = studentAnswer?.SelectedOptionId;
+        var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
+        var isCorrect = selectedOptionId == correctOption?.Id;
+
+        <div class="card mb-3">
+            <div class="card-header @(isCorrect ? "bg-success text-white" : "bg-danger text-white")">
+                <strong>Q@(i). @question.Text</strong>
+                <span class="float-end">
+                    @(isCorrect ? "Correct" : "Wrong") 
+                    (@question.Marks Marks)
+                </span>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    @foreach (var option in question.Options)
+                    {
+                        var isSelected = option.Id == selectedOptionId;
+                        var isOptionCorrect = option.IsCorrect;
+
+                        string listClass = "list-group-item";
+                        if (isOptionCorrect)
+                        {
+                            listClass += " list-group-item-success"; // Green for correct answer
+                        }
+                        else if (isSelected && !isOptionCorrect)
+                        {
+                            listClass += " list-group-item-danger"; // Red for wrong selection
+                        }
+
+                        <li class="@listClass">
+                            @option.Text
+                            @if (isSelected)
+                            {
+                                <span class="badge bg-primary float-end">Your Answer</span>
+                            }
+                            @if (isOptionCorrect)
+                            {
+                                <span class="badge bg-success float-end me-1">Correct Answer</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+        i++;
+    }
+}
+else
+{
+    <p>No questions found for this exam.</p>
+}
+
+<hr />
+
+@if (Context.Session.GetString("Role") == "Teacher")
+{
+    <a asp-controller="Exams" asp-action="Results" asp-route-examId="@Model.ExamId" class="btn btn-primary">
+        Back to Results
+    </a>
+}
+else
+{
+    <a asp-controller="Exams" asp-action="Index" class="btn btn-primary">
+        Back to Exams
+    </a>
+}

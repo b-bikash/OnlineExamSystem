@@ -3,16 +3,22 @@ using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace OnlineExamSystem.Controllers
 {
     public class QuestionsController : BaseController
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public QuestionsController(ApplicationDbContext context)
+        public QuestionsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // -------------------------------
@@ -102,7 +108,7 @@ namespace OnlineExamSystem.Controllers
                 new BreadcrumbItem { Text = "Create Question", IsActive = true }
             };
 
-            return View(new QuestionCreateViewModel { ExamId = examId });
+            return View(new QuestionCreateViewModel { ExamId = examId, Marks = 1 });
         }
 
         // -------------------------------
@@ -136,12 +142,34 @@ namespace OnlineExamSystem.Controllers
                 return View(model);
             }
 
+            // check for duplicates
+            var distinctOptions = filteredOptions.Select(o => o.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (distinctOptions.Count != filteredOptions.Count)
+            {
+                ModelState.AddModelError("", "Duplicate options are not allowed.");
+                return View(model);
+            }
+
             var question = new Question
             {
                 Text = model.QuestionText,
                 ExamId = model.ExamId,
                 Marks = model.Marks
             };
+
+            // handle image upload
+            if (model.ImageFile != null)
+            {
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "questions");
+                Directory.CreateDirectory(uploadsFolder);
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ImageFile.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    model.ImageFile.CopyTo(fileStream);
+                }
+                question.ImageUrl = uniqueFileName;
+            }
 
             _context.Questions.Add(question);
             _context.SaveChanges();
@@ -152,7 +180,7 @@ namespace OnlineExamSystem.Controllers
                 {
                     QuestionId = question.Id,
                     Text = filteredOptions[i],
-                    IsCorrect = (i == model.CorrectOptionIndex)
+                    IsCorrect = (i == model.CorrectOptionIndex.Value)
                 });
             }
 
@@ -198,7 +226,8 @@ namespace OnlineExamSystem.Controllers
                     OptionId = o.Id,
                     Text = o.Text
                 }).ToList(),
-                CorrectOptionId = question.Options.Single(o => o.IsCorrect).Id
+                CorrectOptionId = question.Options.Single(o => o.IsCorrect).Id,
+                ExistingImageUrl = question.ImageUrl // Set existing image URL
             };
 
             return View(model);
@@ -219,10 +248,18 @@ namespace OnlineExamSystem.Controllers
                 .Where(o => !string.IsNullOrWhiteSpace(o.Text))
                 .ToList();
 
-            // Enforce 2–4 options rule
             if (model.Options.Count < 2 || model.Options.Count > 4)
             {
                 ModelState.AddModelError("", "You must provide between 2 and 4 options.");
+            }
+
+            // check for duplicates
+            var optionTexts = model.Options.Select(o => o.Text.Trim()).ToList();
+            var distinctOptionTexts = optionTexts.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            if (optionTexts.Count != distinctOptionTexts.Count)
+            {
+                ModelState.AddModelError("", "Duplicate options are not allowed.");
             }
 
             // Re-run validation AFTER cleanup
@@ -252,6 +289,31 @@ namespace OnlineExamSystem.Controllers
             // Update question
             question.Text = model.QuestionText;
             question.Marks = model.Marks;
+
+            // handle image upload
+            if (model.ImageFile != null)
+            {
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "questions");
+                Directory.CreateDirectory(uploadsFolder);
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ImageFile.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    model.ImageFile.CopyTo(fileStream);
+                }
+
+                // delete old image
+                if (!string.IsNullOrEmpty(question.ImageUrl))
+                {
+                    string oldFilePath = Path.Combine(uploadsFolder, question.ImageUrl);
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                question.ImageUrl = uniqueFileName;
+            }
 
             // Reset correct flags
             foreach (var opt in question.Options)

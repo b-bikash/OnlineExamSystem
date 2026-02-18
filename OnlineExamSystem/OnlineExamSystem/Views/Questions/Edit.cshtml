@@ -20,7 +20,7 @@
 
 <h2>Edit Question</h2>
 
-<form asp-action="Edit" method="post">
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
     <!-- Hidden identifiers -->
@@ -32,6 +32,19 @@
         <label asp-for="QuestionText">Question</label>
         <textarea asp-for="QuestionText" class="form-control" rows="3"></textarea>
         <span asp-validation-for="QuestionText" class="text-danger"></span>
+    </div>
+
+    <!-- Image Upload -->
+    <div class="form-group mt-3">
+        <label asp-for="ImageFile">Update Question Image (Optional)</label>
+        @if (!string.IsNullOrEmpty(Model.ExistingImageUrl))
+        {
+            <div class="mb-2">
+                <img src="~/uploads/questions/@Model.ExistingImageUrl" alt="Current Image" style="max-width: 200px; height: auto;" />
+            </div>
+        }
+        <input asp-for="ImageFile" type="file" class="form-control" />
+        <span asp-validation-for="ImageFile" class="text-danger"></span>
     </div>
 
     <!-- Marks -->

@@ -14,12 +14,14 @@ namespace OnlineExamSystem.Models
         // PHASE 3: MARKS PER QUESTION
         // -------------------------------
         [Required]
-        public int Marks { get; set; } = 0;
+        public int Marks { get; set; } = 1;
 
         public int ExamId { get; set; }
         public Exam Exam { get; set; }
 
         // Options for this question (2–4)
         public ICollection<Option> Options { get; set; }
+
+        public string ImageUrl { get; set; }
     }
 }

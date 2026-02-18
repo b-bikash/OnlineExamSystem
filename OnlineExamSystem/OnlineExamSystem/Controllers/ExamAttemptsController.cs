@@ -50,7 +50,7 @@ namespace OnlineExamSystem.Controllers
                 .AsNoTracking()
                 .FirstOrDefault(e =>
                     e.Id == examId &&
-                    e.CreatedByTeacher.CollegeId == student.CollegeId &&
+                    e.CollegeId == student.CollegeId &&
                     e.Subject.CourseSubjects.Any(cs => cs.CourseId == student.CourseId)
                 );
 
@@ -225,31 +225,48 @@ namespace OnlineExamSystem.Controllers
                 .AsNoTracking()
                 .FirstOrDefault(u => u.Id == userId.Value);
 
-            if (user == null || !user.IsActive || user.Role != "Student")
+            if (user == null || !user.IsActive)
                 return Unauthorized();
 
             var student = _context.Students
                 .AsNoTracking()
                 .FirstOrDefault(s => s.UserId == user.Id);
 
-            if (student == null)
+            if (user.Role == "Student" && student == null)
                 return Unauthorized();
 
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
+                    .ThenInclude(e => e.Questions)
+                        .ThenInclude(q => q.Options)
+                .Include(a => a.StudentAnswers)
                 .AsNoTracking()
                 .FirstOrDefault(a => a.Id == attemptId);
 
             if (attempt == null)
                 return NotFound();
 
-            if (attempt.StudentId != student.Id)
+            // AUTHORIZATION: Student (Owner) OR Teacher (Creator of Exam)
+            bool isStudentOwner = (user.Role == "Student" && attempt.StudentId == student?.Id);
+            bool isTeacherCreator = false;
+
+            if (user.Role == "Teacher")
+            {
+                var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
+                if (teacher != null && attempt.Exam.CreatedByTeacherId == teacher.Id)
+                {
+                    isTeacherCreator = true;
+                }
+            }
+
+            if (!isStudentOwner && !isTeacherCreator)
                 return Unauthorized();
 
             if (attempt.EndTime == null)
                 return RedirectToAction("Index", "Exams");
 
-            if (attempt.Exam.EndDateTime.HasValue &&
+            // Teacher can see results anytime. Student only after exam end time.
+            if (isStudentOwner && attempt.Exam.EndDateTime.HasValue &&
                 DateTime.Now < attempt.Exam.EndDateTime.Value)
             {
                 TempData["ErrorMessage"] = "Results will be available after the exam ends.";

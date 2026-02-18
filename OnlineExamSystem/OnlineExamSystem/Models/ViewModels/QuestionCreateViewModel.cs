@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
+using Microsoft.AspNetCore.Http; // Add namespace for IFormFile
+
 namespace OnlineExamSystem.Models
 {
     public class QuestionCreateViewModel
     {
+        public IFormFile ImageFile { get; set; }
         // -----------------------------
         // Question-level data
         // -----------------------------
@@ -32,6 +35,7 @@ namespace OnlineExamSystem.Models
         public List<string> Options { get; set; } = new List<string>();
 
         // Index of the correct option (radio-button style)
-        public int CorrectOptionIndex { get; set; }
+        [Required(ErrorMessage = "Please select the correct option.")]
+        public int? CorrectOptionIndex { get; set; }
     }
 }

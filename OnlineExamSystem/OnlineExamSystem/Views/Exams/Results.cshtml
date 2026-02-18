@@ -28,6 +28,7 @@ else
                 <th>Roll Number</th>
                 <th>Score</th>
                 <th>Submitted At</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -42,6 +43,11 @@ else
                     <td>@attempt.Student?.RollNumber</td>
                     <td>@attempt.Score</td>
                     <td>@attempt.EndTime</td>
+                    <td>
+                        <a asp-action="Result" asp-controller="ExamAttempts" asp-route-attemptId="@attempt.Id" class="btn btn-sm btn-info">
+                            View Details
+                        </a>
+                    </td>
                 </tr>
                 sn++;
             }

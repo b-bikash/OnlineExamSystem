@@ -92,12 +92,14 @@ public IActionResult Register(RegisterViewModel model)
 {
     if (!ModelState.IsValid)
     {
+        ViewBag.Colleges = _context.Colleges.ToList();
         return View(model);
     }
 
     if (model.Role != "Student" && model.Role != "Teacher")
     {
         ModelState.AddModelError("", "Invalid role selected.");
+        ViewBag.Colleges = _context.Colleges.ToList();
         return View(model);
     }
 
@@ -107,6 +109,7 @@ public IActionResult Register(RegisterViewModel model)
     if (existingUser != null)
     {
         ModelState.AddModelError("", "Email already registered.");
+        ViewBag.Colleges = _context.Colleges.ToList();
         return View(model);
     }
 
@@ -164,6 +167,7 @@ public IActionResult Register(RegisterViewModel model)
     {
         transaction.Rollback();
         ModelState.AddModelError("", "Registration failed. Please try again.");
+        ViewBag.Colleges = _context.Colleges.ToList();
         return View(model);
     }
 }

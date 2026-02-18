@@ -87,7 +87,7 @@ namespace OnlineExamSystem.Controllers
                         .ThenInclude(s => s.CourseSubjects)
                     .Include(e => e.CreatedByTeacher)
                     .Where(e =>
-                        e.CreatedByTeacher.CollegeId == student.CollegeId &&
+                        e.CollegeId == student.CollegeId &&
                         e.Subject.CourseSubjects.Any(cs => cs.CourseId == student.CourseId) &&
                         e.StartDateTime.HasValue &&
                         e.EndDateTime.HasValue
