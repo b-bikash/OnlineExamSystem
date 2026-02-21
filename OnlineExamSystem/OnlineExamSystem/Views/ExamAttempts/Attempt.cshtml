@@ -223,22 +223,26 @@
     }
 </script>
 
-@*@<script>
-    function submitExam() {
-        const selectedOption = document.querySelector('input[name="selectedOptionId"]:checked');
+<script>
+    // Prevent Multiple Tabs for the same exam attempt
+    (function () {
+        const attemptId = '@Model.AttemptId';
+        const channelName = 'exam_attempt_' + attemptId;
+        const bc = new BroadcastChannel(channelName);
+        const pageId = Math.random().toString(36).substring(2);
 
-        if (selectedOption) {
-            // Auto-save current answer first
-            const form = document.querySelector('form[action*="SaveAnswer"]');
-            form.submit();
-            return;
-        }
+        // Ping other tabs to see if they are open
+        bc.postMessage({ type: 'ping', from: pageId });
 
-        // If no option selected
-        if (!confirm("You have not answered all the questions.\n\nAre you sure you want to submit?")) {
-            return;
-        }
-
-        document.querySelector('form[action*="Submit"]').submit();
-    }
-</script>*@
+        bc.onmessage = function (event) {
+            if (event.data.type === 'ping') {
+                // Another tab just opened this exam, tell them we are already here
+                bc.postMessage({ type: 'pong', to: event.data.from });
+            } else if (event.data.type === 'pong' && event.data.to === pageId) {
+                // We received a pong meant for us, meaning another tab is already open
+                alert("You cannot have this exam open in multiple tabs.");
+                window.location.href = '/Exams';
+            }
+        };
+    })();
+</script>

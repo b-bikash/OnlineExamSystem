@@ -175,6 +175,28 @@
 
 @section Scripts {
     <script>
+        // Prevent Multiple Tabs for the same exam attempt
+        (function () {
+            const attemptId = '@Model.Id';
+            const channelName = 'exam_attempt_' + attemptId;
+            const bc = new BroadcastChannel(channelName);
+            const pageId = Math.random().toString(36).substring(2);
+
+            // Ping other tabs to see if they are open
+            bc.postMessage({ type: 'ping', from: pageId });
+
+            bc.onmessage = function (event) {
+                if (event.data.type === 'ping') {
+                    // Another tab just opened this exam, tell them we are already here
+                    bc.postMessage({ type: 'pong', to: event.data.from });
+                } else if (event.data.type === 'pong' && event.data.to === pageId) {
+                    // We received a pong meant for us, meaning another tab is already open
+                    alert("You cannot have this exam open in multiple tabs.");
+                    window.location.href = '/Exams';
+                }
+            };
+        })();
+
         const form = document.getElementById("examForm");
         const modal = new bootstrap.Modal(
             document.getElementById("confirmSubmitModal")

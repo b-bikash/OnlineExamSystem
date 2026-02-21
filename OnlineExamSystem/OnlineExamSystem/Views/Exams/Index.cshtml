@@ -52,6 +52,7 @@
                                 <thead>
                                     <tr>
                                         <th>Title</th>
+                                        <th>Description</th>
                                         <th>Subject</th>
                                         <th>Ends At</th>
                                         <th>Action</th>
@@ -62,6 +63,7 @@
                                     {
                                         <tr>
                                             <td>@exam.Title</td>
+                                            <td>@exam.Description</td>
                                             <td>@exam.Subject?.Name</td>
                                             <td>@exam.EndDateTime</td>
                                             <td>
@@ -104,6 +106,7 @@
                                 <thead>
                                     <tr>
                                         <th>Title</th>
+                                        <th>Description</th>
                                         <th>Subject</th>
                                         <th>Starts At</th>
                                     </tr>
@@ -113,6 +116,7 @@
                                     {
                                         <tr>
                                             <td>@exam.Title</td>
+                                            <td>@exam.Description</td>
                                             <td>@exam.Subject?.Name</td>
                                             <td>@exam.StartDateTime</td>
                                         </tr>
@@ -147,6 +151,7 @@
                                 <thead>
                                     <tr>
                                         <th>Title</th>
+                                        <th>Description</th>
                                         <th>Subject</th>
                                         <th>Teacher</th>
                                         <th>Action</th>
@@ -157,6 +162,7 @@
                                     {
                                         <tr>
                                             <td>@item.Exam.Title</td>
+                                            <td>@item.Exam.Description</td>
                                             <td>@item.Exam.Subject?.Name</td>
                                             <td>@item.TeacherName</td>
                                             <td>
