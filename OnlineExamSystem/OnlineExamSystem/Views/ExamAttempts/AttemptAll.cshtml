@@ -1,8 +1,16 @@
-﻿@model OnlineExamSystem.Models.ExamAttempt
+@model OnlineExamSystem.Models.ExamAttempt
 
 @{
     ViewData["Title"] = "Attempt Exam";
     var questionIndex = 1;
+
+    var designatedEndTime = Model.StartTime.AddMinutes(Model.Exam.DurationInMinutes);
+    var actualEndTime = Model.Exam.EndDateTime.HasValue && Model.Exam.EndDateTime.Value < designatedEndTime
+        ? Model.Exam.EndDateTime.Value
+        : designatedEndTime;
+
+    int remainingSeconds = (int)(actualEndTime - DateTime.Now).TotalSeconds;
+    if (remainingSeconds < 0) remainingSeconds = 0;
 }
 
 <style>
@@ -63,7 +71,12 @@
             <!-- Exam Header -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <h2 class="mb-2">@Model.Exam.Title</h2>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="mb-0">@Model.Exam.Title</h2>
+                        <div class="text-danger fw-bold fs-4 border rounded px-3 py-1 bg-light">
+                            <i class="bi bi-clock-history me-2"></i><span id="examTimer">--:--</span>
+                        </div>
+                    </div>
 
                     @if (!string.IsNullOrWhiteSpace(Model.Exam.Description))
                     {
@@ -174,7 +187,40 @@
 </div>
 
 @section Scripts {
+    <!-- Bootstrap Icons for Timer -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
     <script>
+        // Exam Timer Logic
+        let remainingSeconds = @remainingSeconds;
+        const timerElement = document.getElementById('examTimer');
+        let isSubmitting = false;
+
+        function updateTimerDisplay() {
+            if (remainingSeconds <= 0) {
+                timerElement.innerText = "00:00";
+                if (!isSubmitting) {
+                    isSubmitting = true;
+                    alert("Time's up! Your exam will be automatically submitted.");
+                    document.getElementById("examForm").submit();
+                }
+                return;
+            }
+
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            const minutesStr = minutes.toString().padStart(2, '0');
+            const secondsStr = seconds.toString().padStart(2, '0');
+            
+            timerElement.innerText = `${minutesStr}:${secondsStr}`;
+            remainingSeconds--;
+        }
+
+        // Initialize and start timer
+        updateTimerDisplay();
+        const timerInterval = setInterval(updateTimerDisplay, 1000);
+
         // Prevent Multiple Tabs for the same exam attempt
         (function () {
             const attemptId = '@Model.Id';

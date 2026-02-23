@@ -3,6 +3,14 @@
 @{
     ViewData["Title"] = "Exam Attempt";
     Layout = "_Layout";
+
+    var designatedEndTime = Model.StartTime.AddMinutes(Model.DurationInMinutes);
+    var actualEndTime = Model.ExamEndDateTime.HasValue && Model.ExamEndDateTime.Value < designatedEndTime
+        ? Model.ExamEndDateTime.Value
+        : designatedEndTime;
+
+    int remainingSeconds = (int)(actualEndTime - DateTime.Now).TotalSeconds;
+    if (remainingSeconds < 0) remainingSeconds = 0;
 }
 
 <style>
@@ -112,7 +120,9 @@
 
 <div class="exam-header">
     <div>📘 @Model.ExamTitle</div>
-    <div>⏱ Duration: @Model.DurationInMinutes minutes</div>
+    <div id="examTimer" style="font-size: 1.25rem; font-weight: bold; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 5px;">
+        ⏱ @Model.DurationInMinutes:00
+    </div>
     <div>Logout 🔒</div>
 </div>
 
@@ -194,6 +204,7 @@
         <!-- SUBMIT EXAM -->
         <form method="post"
               action="/ExamAttempts/Submit"
+              id="finalSubmitForm"
               onsubmit="return confirmSubmit();">
 
             @Html.AntiForgeryToken()
@@ -209,7 +220,38 @@
 </div>
 
 <script>
+    // Exam Timer Logic for single-question view
+    let remainingSeconds = @remainingSeconds;
+    const timerElement = document.getElementById('examTimer');
+    let isAutoSubmitting = false;
+
+    function updateTimerDisplay() {
+        if (remainingSeconds <= 0) {
+            timerElement.innerText = "⏱ 00:00";
+            if (!isAutoSubmitting) {
+                isAutoSubmitting = true;
+                alert("Time's up! Your exam will be automatically submitted.");
+                document.getElementById('finalSubmitForm').submit();
+            }
+            return;
+        }
+
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        
+        const minutesStr = minutes.toString().padStart(2, '0');
+        const secondsStr = seconds.toString().padStart(2, '0');
+        
+        timerElement.innerText = `⏱ ${minutesStr}:${secondsStr}`;
+        remainingSeconds--;
+    }
+
+    updateTimerDisplay();
+    setInterval(updateTimerDisplay, 1000);
+
     function confirmSubmit() {
+        if (isAutoSubmitting) return true; // bypass confirmation if auto submitting
+
         const totalQuestions = @Model.TotalQuestions;
         const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
 

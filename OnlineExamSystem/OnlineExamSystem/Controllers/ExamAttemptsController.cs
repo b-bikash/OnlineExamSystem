@@ -132,9 +132,19 @@ namespace OnlineExamSystem.Controllers
         [HttpPost]
         public IActionResult SaveAnswer(int attemptId, int questionId, int selectedOptionId, int questionIndex)
         {
-            var attempt = _context.ExamAttempts.Find(attemptId);
+            var attempt = _context.ExamAttempts
+                .Include(a => a.Exam)
+                .FirstOrDefault(a => a.Id == attemptId);
 
             if (attempt == null || attempt.EndTime != null)
+                return Unauthorized();
+
+            var designatedEndTime = attempt.StartTime.AddMinutes(attempt.Exam.DurationInMinutes);
+            var actualEndTime = attempt.Exam.EndDateTime.HasValue && attempt.Exam.EndDateTime.Value < designatedEndTime
+                ? attempt.Exam.EndDateTime.Value
+                : designatedEndTime;
+
+            if (DateTime.Now > actualEndTime.AddMinutes(1))
                 return Unauthorized();
 
             var existingAnswer = _context.StudentAnswers
@@ -179,29 +189,38 @@ namespace OnlineExamSystem.Controllers
             if (attempt == null || attempt.EndTime != null)
                 return Unauthorized();
 
+            var designatedEndTime = attempt.StartTime.AddMinutes(attempt.Exam.DurationInMinutes);
+            var actualEndTime = attempt.Exam.EndDateTime.HasValue && attempt.Exam.EndDateTime.Value < designatedEndTime
+                ? attempt.Exam.EndDateTime.Value
+                : designatedEndTime;
+
             // Handle null answers (e.g., student submitted without answering anything)
             if (answers == null)
             {
                 answers = new Dictionary<int, int>();
             }
 
-            var oldAnswers = _context.StudentAnswers
-                .Where(sa => sa.ExamAttemptId == attemptId);
-
-            _context.StudentAnswers.RemoveRange(oldAnswers);
-
-            foreach (var entry in answers)
+            // Only process incoming answers if within 2-minute grace period
+            if (DateTime.Now <= actualEndTime.AddMinutes(2))
             {
-                _context.StudentAnswers.Add(new StudentAnswer
-                {
-                    ExamAttemptId = attemptId,
-                    QuestionId = entry.Key,
-                    SelectedOptionId = entry.Value,
-                    AnsweredAt = DateTime.UtcNow
-                });
-            }
+                var oldAnswers = _context.StudentAnswers
+                    .Where(sa => sa.ExamAttemptId == attemptId);
 
-            _context.SaveChanges();
+                _context.StudentAnswers.RemoveRange(oldAnswers);
+
+                foreach (var entry in answers)
+                {
+                    _context.StudentAnswers.Add(new StudentAnswer
+                    {
+                        ExamAttemptId = attemptId,
+                        QuestionId = entry.Key,
+                        SelectedOptionId = entry.Value,
+                        AnsweredAt = DateTime.UtcNow
+                    });
+                }
+
+                _context.SaveChanges();
+            }
 
             // Calculate score (will be 0 if answers is empty)
             attempt.Score =

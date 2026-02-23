@@ -13,6 +13,8 @@ namespace OnlineExamSystem.Models
 
         public DateTime StartTime { get; set; }
 
+        public DateTime? ExamEndDateTime { get; set; }
+
         public int CurrentQuestionIndex { get; set; }
 
         public int TotalQuestions { get; set; }
