@@ -10,6 +10,7 @@ using System.Collections.Generic;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(SessionValidationFilter))]
     public class ExamsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -20,11 +21,10 @@ namespace OnlineExamSystem.Controllers
         }
 
         // ---------------- HELPERS ----------------
-
         private bool IsTeacherOrAdmin()
         {
             var role = HttpContext.Session.GetString("Role");
-            return role == "Teacher" || role == "Admin";
+            return role == "Teacher" || role == "Admin" || role == "TeacherAdmin";
         }
 
         private bool IsOwnerOrAdmin(Exam exam)
@@ -32,27 +32,32 @@ namespace OnlineExamSystem.Controllers
             var role = HttpContext.Session.GetString("Role");
             var userId = HttpContext.Session.GetInt32("UserId");
             var teacherId = HttpContext.Session.GetInt32("TeacherId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
             if (role == "Admin")
                 return true;
 
+            // 🔐 TeacherAdmin → Any exam of their college
+            if (role == "TeacherAdmin")
+            {
+                return sessionCollegeId != null &&
+                       exam.CollegeId == sessionCollegeId.Value;
+            }
+
+            // 🔐 Teacher → Only their own exam
             if (role == "Teacher")
             {
                 if (teacherId.HasValue)
-                {
                     return exam.CreatedByTeacherId == teacherId.Value;
-                }
 
-                // Fallback (e.g. session expired but user still logged in context)
                 if (userId.HasValue)
                 {
-                     var teacher = _context.Teachers
+                    var teacher = _context.Teachers
                         .AsNoTracking()
                         .FirstOrDefault(t => t.UserId == userId.Value);
-                     if (teacher != null)
-                     {
-                         return exam.CreatedByTeacherId == teacher.Id;
-                     }
+
+                    if (teacher != null)
+                        return exam.CreatedByTeacherId == teacher.Id;
                 }
             }
 
@@ -142,30 +147,38 @@ namespace OnlineExamSystem.Controllers
             {
                 var userId = HttpContext.Session.GetInt32("UserId");
                 var teacherId = HttpContext.Session.GetInt32("TeacherId");
+                var collegeId = HttpContext.Session.GetInt32("CollegeId");
 
-                if (userId == null)
+                if (userId == null || collegeId == null)
                     return Unauthorized();
 
                 if (teacherId == null)
                 {
-                     var uniqueTeacher = _context.Teachers
+                    var uniqueTeacher = _context.Teachers
                         .AsNoTracking()
-                        .FirstOrDefault(t => t.UserId == userId.Value);
-                     if (uniqueTeacher != null)
-                     {
-                         teacherId = uniqueTeacher.Id;
-                         HttpContext.Session.SetInt32("TeacherId", uniqueTeacher.Id);
-                     }
-                     else
-                     {
-                         return Unauthorized();
-                     }
+                        .FirstOrDefault(t =>
+                            t.UserId == userId.Value &&
+                            t.CollegeId == collegeId.Value
+                        );
+
+                    if (uniqueTeacher != null)
+                    {
+                        teacherId = uniqueTeacher.Id;
+                        HttpContext.Session.SetInt32("TeacherId", uniqueTeacher.Id);
+                    }
+                    else
+                    {
+                        return Unauthorized();
+                    }
                 }
 
                 var exams = _context.Exams
                     .AsNoTracking()
                     .Include(e => e.Subject)
-                    .Where(e => e.CreatedByTeacherId == teacherId.Value)
+                    .Where(e =>
+                        e.CreatedByTeacherId == teacherId.Value &&
+                        e.CollegeId == collegeId.Value
+                    )
                     .ToList();
 
                 return View(exams);
@@ -174,10 +187,50 @@ namespace OnlineExamSystem.Controllers
             // ================= ADMIN =================
             if (role == "Admin")
             {
+                var query = _context.Exams
+                    .AsNoTracking()
+                    .Include(e => e.Subject)
+                    .Include(e => e.CreatedByTeacher)
+                    .Include(e => e.College)
+                    .AsQueryable();
+
+                int? collegeId = null;
+
+                if (Request.Query.ContainsKey("collegeId"))
+                {
+                    if (int.TryParse(Request.Query["collegeId"], out int parsed))
+                        collegeId = parsed;
+                }
+
+                if (collegeId.HasValue)
+                {
+                    query = query.Where(e => e.CollegeId == collegeId.Value);
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+
+                ViewBag.SelectedCollegeId = collegeId;
+
+                var exams = query.ToList();
+
+                return View(exams);
+            }
+
+            // ================= TEACHERADMIN =================
+            if (role == "TeacherAdmin")
+            {
+                var collegeId = HttpContext.Session.GetInt32("CollegeId");
+
+                if (collegeId == null)
+                    return Unauthorized();
+
                 var exams = _context.Exams
                     .AsNoTracking()
                     .Include(e => e.Subject)
                     .Include(e => e.CreatedByTeacher)
+                    .Where(e => e.CollegeId == collegeId.Value)
                     .ToList();
 
                 return View(exams);
@@ -207,11 +260,11 @@ namespace OnlineExamSystem.Controllers
             if (teacher == null)
                 return Unauthorized();
 
-            if (teacher.CollegeId == null)
+            /*if (teacher.CollegeId == null)
             {
                 TempData["ErrorMessage"] = "You must be associated with a college to create an exam.";
                 return RedirectToAction("Index", "Dashboard");
-            }
+            }*/
 
             ViewBag.Subjects = teacher.TeacherSubjects
                 .Where(ts => ts.Subject != null)
@@ -258,7 +311,7 @@ namespace OnlineExamSystem.Controllers
             ModelState.Remove("Questions");
             ModelState.Remove("ExamAttempts");
 
-            if (teacher.CollegeId == null)
+            /*if (teacher.CollegeId == null)
             {
                 ModelState.AddModelError("", "You must be associated with a college to create an exam.");
                 // Repopulate ViewBag
@@ -273,7 +326,7 @@ namespace OnlineExamSystem.Controllers
                     })
                     .ToList();
                 return View(exam);
-            }
+            }*/
 
 
             if (!ModelState.IsValid)
@@ -292,8 +345,17 @@ namespace OnlineExamSystem.Controllers
                 return View(exam);
             }
 
-            exam.CreatedByTeacherId = teacher.Id;
-            exam.CollegeId = teacher.CollegeId.Value;
+            exam.CollegeId = teacher.CollegeId;
+
+            if (role == "Teacher")
+            {
+                exam.CreatedByTeacherId = teacher.Id;
+            }
+            else if (role == "TeacherAdmin")
+            {
+                exam.CreatedByTeacherId = teacher.Id; // optional: or allow selecting teacher later
+            }
+
             exam.CreatedAt = DateTime.Now;
 
             _context.Exams.Add(exam);

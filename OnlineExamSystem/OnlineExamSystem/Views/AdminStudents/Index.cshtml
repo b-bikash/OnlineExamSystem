@@ -2,13 +2,16 @@
 
 @{
     ViewData["Title"] = "Student Management";
+    var role = Context.Session.GetString("Role");
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
+    var selectedCollegeId = ViewBag.SelectedCollegeId as int?;
 }
 
 <h2 class="mb-4">Student Management</h2>
 
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show mb-3">
         @TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -16,22 +19,60 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+    <div class="alert alert-success alert-dismissible fade show mb-3">
         @TempData["Success"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<form method="get" class="d-flex mb-3" style="max-width: 400px;">
-    <input type="text"
-           name="search"
-           value="@ViewBag.Search"
-           class="form-control me-2"
-           placeholder="Search by email or roll number" />
-    <button type="submit" class="btn btn-outline-secondary">
-        Search
-    </button>
-</form>
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+
+        <form method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Email or Roll Number" />
+            </div>
+
+            @if (role == "Admin")
+            {
+                <div class="col-md-4">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select">
+                        <option value="">All Colleges</option>
+                        @if (colleges != null)
+                        {
+                            foreach (var college in colleges)
+                            {
+                                <option value="@college.Id"
+                                        selected="@(selectedCollegeId == college.Id)">
+                                    @college.Name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    Apply Filters
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary">
+                    Reset
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
 
 @if (Model.Any())
 {
@@ -39,12 +80,17 @@
         <div class="card-body">
 
             <table class="table table-bordered table-striped align-middle">
-                <thead>
+                <thead class="table-dark">
                     <tr>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Course</th>
-                        <th>College</th>
+
+                        @if (role == "Admin")
+                        {
+                            <th>College</th>
+                        }
+
                         <th>Roll Number</th>
                         <th>Action</th>
                     </tr>
@@ -56,8 +102,18 @@
                             <td>@student.Name</td>
                             <td>@student.User?.Email</td>
                             <td>@student.Course?.Name</td>
-                            <td>@student.College?.Name</td>
+
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @student.College?.Name
+                                    </span>
+                                </td>
+                            }
+
                             <td>@student.RollNumber</td>
+
                             <td>
                                 <a asp-action="Edit"
                                    asp-route-id="@student.Id"
@@ -78,10 +134,10 @@ else
     <div class="border rounded p-4 text-center text-muted mt-4">
         <h5>No students found</h5>
         <p class="mb-2">
-            Try searching by email or roll number.
+            Try adjusting filters.
         </p>
         <p class="mb-0">
-            Students appear here after registration and profile completion.
+            Students appear after registration and profile completion.
         </p>
     </div>
 }

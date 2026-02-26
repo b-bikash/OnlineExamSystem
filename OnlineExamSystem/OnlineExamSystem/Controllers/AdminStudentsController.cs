@@ -4,6 +4,7 @@ using OnlineExamSystem.Models;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(AdminAuthorizeFilter))]
     public class AdminStudentsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -13,15 +14,14 @@ namespace OnlineExamSystem.Controllers
             _context = context;
         }
 
-        // GET: AdminStudents + SEARCH (Email / Roll Number)
-        public async Task<IActionResult> Index(string search)
+        // GET: AdminStudents + SEARCH
+        public async Task<IActionResult> Index(string search, int? collegeId)
         {
             var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-            if (role != "Admin")
-            {
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             var studentsQuery = _context.Students
                 .Include(s => s.User)
@@ -29,6 +29,32 @@ namespace OnlineExamSystem.Controllers
                 .Include(s => s.College)
                 .AsQueryable();
 
+            // 🔐 TeacherAdmin → Only own college
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                studentsQuery = studentsQuery
+                    .Where(s => s.CollegeId == sessionCollegeId.Value);
+            }
+            else if (role == "Admin")
+            {
+                // 🏫 Optional college filter for Admin
+                if (collegeId.HasValue)
+                {
+                    studentsQuery = studentsQuery
+                        .Where(s => s.CollegeId == collegeId.Value);
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+
+                ViewBag.SelectedCollegeId = collegeId;
+            }
+
+            // 🔎 Search by Email or Roll Number
             if (!string.IsNullOrWhiteSpace(search))
             {
                 studentsQuery = studentsQuery.Where(s =>
@@ -37,22 +63,19 @@ namespace OnlineExamSystem.Controllers
                 );
             }
 
-
             ViewBag.Search = search;
 
-            var students = await studentsQuery.ToListAsync();
-            return View(students);
+            return View(await studentsQuery.ToListAsync());
         }
 
-        // GET: AdminStudents/Edit/5
+        // GET: Edit
         public async Task<IActionResult> Edit(int id)
         {
             var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-            if (role != "Admin")
-            {
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             var student = await _context.Students
                 .Include(s => s.User)
@@ -61,34 +84,61 @@ namespace OnlineExamSystem.Controllers
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (student == null)
-            {
-                return NotFound();
-            }
+                return Unauthorized();
 
-            ViewBag.Courses = _context.Courses.ToList();
-            ViewBag.Colleges = _context.Colleges.ToList();
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null || student.CollegeId != sessionCollegeId.Value)
+                    return Unauthorized();
+
+                ViewBag.Courses = _context.Courses
+                    .Where(c => c.CollegeId == sessionCollegeId.Value)
+                    .ToList();
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.Id == sessionCollegeId.Value)
+                    .ToList();
+            }
+            else
+            {
+                ViewBag.Courses = _context.Courses.ToList();
+                ViewBag.Colleges = _context.Colleges.ToList();
+            }
 
             return View(student);
         }
 
-        // POST: AdminStudents/Edit/5
+        // POST: Edit
         [HttpPost]
         public async Task<IActionResult> Edit(int id, Student model)
         {
             var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-            if (role != "Admin")
-            {
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
-            }
 
             var student = await _context.Students
                 .Include(s => s.User)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (student == null)
+                return Unauthorized();
+
+            if (role == "TeacherAdmin")
             {
-                return NotFound();
+                if (sessionCollegeId == null || student.CollegeId != sessionCollegeId.Value)
+                    return Unauthorized();
+
+                // 🔐 Prevent cross-college course assignment
+                var validCourse = await _context.Courses.AnyAsync(c =>
+                    c.Id == model.CourseId &&
+                    c.CollegeId == sessionCollegeId.Value);
+
+                if (!validCourse)
+                    return Unauthorized();
+
+                model.CollegeId = sessionCollegeId.Value;
             }
 
             student.Name = model.Name;
@@ -104,8 +154,23 @@ namespace OnlineExamSystem.Controllers
             catch (DbUpdateException)
             {
                 ModelState.AddModelError("", "Duplicate roll number for the selected college.");
-                ViewBag.Courses = _context.Courses.ToList();
-                ViewBag.Colleges = _context.Colleges.ToList();
+
+                if (role == "TeacherAdmin")
+                {
+                    ViewBag.Courses = _context.Courses
+                        .Where(c => c.CollegeId == sessionCollegeId.Value)
+                        .ToList();
+
+                    ViewBag.Colleges = _context.Colleges
+                        .Where(c => c.Id == sessionCollegeId.Value)
+                        .ToList();
+                }
+                else
+                {
+                    ViewBag.Courses = _context.Courses.ToList();
+                    ViewBag.Colleges = _context.Colleges.ToList();
+                }
+
                 return View(model);
             }
 

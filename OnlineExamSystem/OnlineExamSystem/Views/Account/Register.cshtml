@@ -77,7 +77,7 @@
     const collegeSection = document.getElementById('collegeSection');
 
     function toggleCollege() {
-        if (roleSelect.value === 'Teacher') {
+        if (roleSelect.value === 'Teacher' || roleSelect.value === 'Student') {
             collegeSection.style.display = 'block';
         } else {
             collegeSection.style.display = 'none';

@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // MVC
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<AdminAuthorizeFilter>();
+builder.Services.AddScoped<SessionValidationFilter>();
 
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

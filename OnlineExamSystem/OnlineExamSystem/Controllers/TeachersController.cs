@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(SessionValidationFilter))]
     public class TeachersController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -61,7 +62,7 @@ namespace OnlineExamSystem.Controllers
         // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateProfile(string name, string username, string email, int? collegeId)
+        public IActionResult UpdateProfile(string name, string username, string email, int collegeId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -112,7 +113,7 @@ namespace OnlineExamSystem.Controllers
                     {
                         Value = c.Id.ToString(),
                         Text = c.Name,
-                        Selected = c.Id == (collegeId ?? teacher.CollegeId)
+                        Selected = c.Id == collegeId
                     })
                     .ToList();
 

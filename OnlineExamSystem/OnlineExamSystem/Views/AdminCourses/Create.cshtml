@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = "Add Course";
+
+    var role = Context.Session.GetString("Role");
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
 }
 
 <h2 class="mb-4">Add Course</h2>
@@ -10,6 +13,25 @@
 
     <div class="card shadow-sm border-0">
         <div class="card-body">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            @if (role == "Admin")
+            {
+                <div class="mb-3">
+                    <label asp-for="CollegeId" class="form-label"></label>
+
+                    <select asp-for="CollegeId" class="form-select">
+                        <option value="">-- Select College --</option>
+                        @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
+                        {
+                            <option value="@college.Id">
+                                @college.Name
+                            </option>
+                        }
+                    </select>
+
+                    <span asp-validation-for="CollegeId" class="text-danger"></span>
+                </div>
+            }
 
             <div class="mb-3">
                 <label asp-for="Name" class="form-label"></label>
@@ -28,3 +50,7 @@
         </div>
     </div>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

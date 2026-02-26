@@ -26,19 +26,6 @@ namespace OnlineExamSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Courses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Courses", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ExamBehaviorLogs",
                 columns: table => new
                 {
@@ -60,16 +47,43 @@ namespace OnlineExamSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Courses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Courses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Courses_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Subjects",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Subjects", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Subjects_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -82,12 +96,18 @@ namespace OnlineExamSystem.Migrations
                     Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Users_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -145,10 +165,10 @@ namespace OnlineExamSystem.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     CourseId = table.Column<int>(type: "int", nullable: true),
-                    CollegeId = table.Column<int>(type: "int", nullable: true),
-                    RollNumber = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    CollegeId = table.Column<int>(type: "int", nullable: false),
+                    RollNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     IsProfileCompleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
@@ -158,7 +178,8 @@ namespace OnlineExamSystem.Migrations
                         name: "FK_Students_Colleges_CollegeId",
                         column: x => x.CollegeId,
                         principalTable: "Colleges",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Students_Courses_CourseId",
                         column: x => x.CourseId,
@@ -179,7 +200,7 @@ namespace OnlineExamSystem.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     CollegeId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -271,6 +292,7 @@ namespace OnlineExamSystem.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     StudentId = table.Column<int>(type: "int", nullable: false),
                     ExamId = table.Column<int>(type: "int", nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndTime = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Score = table.Column<int>(type: "int", nullable: false)
@@ -278,6 +300,12 @@ namespace OnlineExamSystem.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ExamAttempts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ExamAttempts_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_ExamAttempts_Exams_ExamId",
                         column: x => x.ExamId,
@@ -300,11 +328,19 @@ namespace OnlineExamSystem.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Marks = table.Column<int>(type: "int", nullable: false),
-                    ExamId = table.Column<int>(type: "int", nullable: false)
+                    ExamId = table.Column<int>(type: "int", nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Questions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Questions_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Questions_Exams_ExamId",
                         column: x => x.ExamId,
@@ -320,6 +356,7 @@ namespace OnlineExamSystem.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     QuestionId = table.Column<int>(type: "int", nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false),
                     Text = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     IsCorrect = table.Column<bool>(type: "bit", nullable: false)
                 },
@@ -327,11 +364,17 @@ namespace OnlineExamSystem.Migrations
                 {
                     table.PrimaryKey("PK_Options", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Options_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Options_Questions_QuestionId",
                         column: x => x.QuestionId,
                         principalTable: "Questions",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -343,17 +386,24 @@ namespace OnlineExamSystem.Migrations
                     ExamAttemptId = table.Column<int>(type: "int", nullable: false),
                     QuestionId = table.Column<int>(type: "int", nullable: false),
                     SelectedOptionId = table.Column<int>(type: "int", nullable: false),
+                    CollegeId = table.Column<int>(type: "int", nullable: false),
                     AnsweredAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_StudentAnswers", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_StudentAnswers_Colleges_CollegeId",
+                        column: x => x.CollegeId,
+                        principalTable: "Colleges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_StudentAnswers_ExamAttempts_ExamAttemptId",
                         column: x => x.ExamAttemptId,
                         principalTable: "ExamAttempts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_StudentAnswers_Options_SelectedOptionId",
                         column: x => x.SelectedOptionId,
@@ -374,9 +424,19 @@ namespace OnlineExamSystem.Migrations
                 column: "CourseId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Courses_CollegeId",
+                table: "Courses",
+                column: "CollegeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CourseSubjects_SubjectId",
                 table: "CourseSubjects",
                 column: "SubjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExamAttempts_CollegeId",
+                table: "ExamAttempts",
+                column: "CollegeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExamAttempts_ExamId",
@@ -404,14 +464,29 @@ namespace OnlineExamSystem.Migrations
                 column: "SubjectId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Options_CollegeId",
+                table: "Options",
+                column: "CollegeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Options_QuestionId",
                 table: "Options",
                 column: "QuestionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Questions_CollegeId",
+                table: "Questions",
+                column: "CollegeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Questions_ExamId",
                 table: "Questions",
                 column: "ExamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StudentAnswers_CollegeId",
+                table: "StudentAnswers",
+                column: "CollegeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StudentAnswers_ExamAttemptId_QuestionId",
@@ -434,7 +509,7 @@ namespace OnlineExamSystem.Migrations
                 table: "Students",
                 columns: new[] { "CollegeId", "RollNumber" },
                 unique: true,
-                filter: "[CollegeId] IS NOT NULL AND [RollNumber] IS NOT NULL");
+                filter: "[RollNumber] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Students_CourseId",
@@ -445,6 +520,11 @@ namespace OnlineExamSystem.Migrations
                 name: "IX_Students_UserId",
                 table: "Students",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subjects_CollegeId",
+                table: "Subjects",
+                column: "CollegeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Teachers_CollegeId",
@@ -460,6 +540,13 @@ namespace OnlineExamSystem.Migrations
                 name: "IX_TeacherSubjects_SubjectId",
                 table: "TeacherSubjects",
                 column: "SubjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_CollegeId_Role",
+                table: "Users",
+                columns: new[] { "CollegeId", "Role" },
+                unique: true,
+                filter: "[Role] = 'TeacherAdmin' AND [CollegeId] IS NOT NULL");
         }
 
         /// <inheritdoc />
@@ -505,10 +592,10 @@ namespace OnlineExamSystem.Migrations
                 name: "Teachers");
 
             migrationBuilder.DropTable(
-                name: "Colleges");
+                name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Colleges");
         }
     }
 }

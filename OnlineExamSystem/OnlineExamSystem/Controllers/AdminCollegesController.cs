@@ -3,6 +3,7 @@ using OnlineExamSystem.Models;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(AdminAuthorizeFilter))]
     public class AdminCollegesController : BaseController
     {
         private readonly ApplicationDbContext _context;

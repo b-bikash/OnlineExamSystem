@@ -189,6 +189,48 @@
 @* ================= TEACHER VIEW ================= *@
 @if (role == "Teacher" || role == "Admin")
 {
+    @if (role == "Admin")
+    {
+        var colleges = ViewBag.Colleges as List<College>;
+        var selectedCollegeId = ViewBag.SelectedCollegeId as int?;
+
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body">
+
+                <form method="get" class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+                        <label class="form-label">College</label>
+                        <select name="collegeId" class="form-select">
+                            <option value="">All Colleges</option>
+                            @if (colleges != null)
+                            {
+                                foreach (var college in colleges)
+                                {
+                                    <option value="@college.Id"
+                                            selected="@(selectedCollegeId == college.Id)">
+                                        @college.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            Apply Filter
+                        </button>
+
+                        <a asp-action="Index" class="btn btn-secondary">
+                            Reset
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    }
     var exams = Model as IEnumerable<Exam> ?? Enumerable.Empty<Exam>();
 
     var unscheduled = exams
@@ -234,6 +276,7 @@
                     @if (role == "Admin")
                     {
                         <th>Teacher</th>
+                        <th>College</th>
                     }
                     <th>Actions</th>
                 </tr>
@@ -250,6 +293,11 @@
                         @if (role == "Admin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
+                            <td>
+                                <span class="badge bg-info text-dark">
+                                    @exam.College?.Name
+                                </span>
+                            </td>
                         }
 
                         <td>
@@ -289,6 +337,7 @@
                     @if (role == "Admin")
                     {
                         <th>Teacher</th>
+                        <th>College</th>
                     }
                     <th>Ends At</th>
                     <th>Actions</th>
@@ -305,6 +354,11 @@
                         @if (role == "Admin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
+                            <td>
+                                <span class="badge bg-info text-dark">
+                                    @exam.College?.Name
+                                </span>
+                            </td>
                         }
                         <td>@exam.EndDateTime</td>
                         <td>
@@ -335,6 +389,7 @@
                     @if (role == "Admin")
                     {
                         <th>Teacher</th>
+                        <th>College</th>
                     }
                     <th>Starts At</th>
                     <th>Actions</th>
@@ -351,6 +406,11 @@
                         @if (role == "Admin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
+                            <td>
+                                <span class="badge bg-info text-dark">
+                                    @exam.College?.Name
+                                </span>
+                            </td>
                         }
                         <td>@exam.StartDateTime</td>
                         <td>

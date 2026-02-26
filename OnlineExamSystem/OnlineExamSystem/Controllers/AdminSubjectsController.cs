@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(AdminAuthorizeFilter))]
     public class AdminSubjectsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -16,13 +17,40 @@ namespace OnlineExamSystem.Controllers
         // =========================
         // LIST
         // =========================
-        public IActionResult Index()
+        public IActionResult Index(int? collegeId)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subjects = _context.Subjects
-                .AsNoTracking()
+            var query = _context.Subjects.AsNoTracking();
+
+            // 🔐 TeacherAdmin → Only own college
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                query = query.Where(s => s.CollegeId == sessionCollegeId.Value);
+            }
+            else if (role == "Admin")
+            {
+                // 🏫 Optional college filter for Admin
+                if (collegeId.HasValue)
+                {
+                    query = query.Where(s => s.CollegeId == collegeId.Value);
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+
+                ViewBag.SelectedCollegeId = collegeId;
+            }
+
+            var subjects = query
                 .OrderBy(s => s.Name)
                 .ToList();
 
@@ -32,51 +60,109 @@ namespace OnlineExamSystem.Controllers
         // =========================
         // CREATE
         // =========================
-        
-        // GET
-[HttpGet]
-public IActionResult Create()
-{
-    var role = HttpContext.Session.GetString("Role");
-    if (role != "Admin")
-        return Unauthorized();
+        [HttpGet]
+        public IActionResult Create()
+        {
+            var role = HttpContext.Session.GetString("Role");
 
-    return View();
-}
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
 
-// POST
-[HttpPost]
-[ValidateAntiForgeryToken]
-public IActionResult Create(Subject model)
-{
-    var role = HttpContext.Session.GetString("Role");
-    if (role != "Admin")
-        return Unauthorized();
+            if (role == "Admin")
+            {
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+            }
 
-    if (string.IsNullOrWhiteSpace(model.Name))
-    {
-        ModelState.AddModelError("Name", "Subject name is required.");
-        return View(model);
-    }
+            return View();
+        }
 
-    _context.Subjects.Add(model);
-    _context.SaveChanges();
+        [HttpPost]
+        public IActionResult Create(Subject model)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-    TempData["Success"] = "Subject added successfully.";
-    return RedirectToAction(nameof(Index));
-}
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
 
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                ModelState.AddModelError("Name", "Subject name is required.");
+            }
+
+            // 🔐 Multi-tenant enforcement
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                model.CollegeId = sessionCollegeId.Value;
+            }
+            else if (role == "Admin")
+            {
+                if (model.CollegeId == 0)
+                {
+                    ModelState.AddModelError("CollegeId", "College selection is required.");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                if (role == "Admin")
+                {
+                    ViewBag.Colleges = _context.Colleges
+                        .Where(c => c.IsActive)
+                        .ToList();
+                }
+
+                return View(model);
+            }
+
+            bool exists = _context.Subjects.Any(s =>
+                s.Name.ToLower() == model.Name.ToLower() &&
+                s.CollegeId == model.CollegeId);
+
+            if (exists)
+            {
+                ModelState.AddModelError("Name", "Subject already exists in this college.");
+
+                if (role == "Admin")
+                {
+                    ViewBag.Colleges = _context.Colleges
+                        .Where(c => c.IsActive)
+                        .ToList();
+                }
+
+                return View(model);
+            }
+
+            _context.Subjects.Add(model);
+            _context.SaveChanges();
+
+            TempData["Success"] = "Subject added successfully.";
+            return RedirectToAction(nameof(Index));
+        }
 
         // =========================
         // EDIT
         // =========================
         public IActionResult Edit(int id)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subject = _context.Subjects.Find(id);
-            if (subject == null) return NotFound();
+            var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
+            if (subject == null)
+                return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || subject.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
             return View(subject);
         }
@@ -85,14 +171,37 @@ public IActionResult Create(Subject model)
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, Subject model)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subject = _context.Subjects.Find(id);
-            if (subject == null) return NotFound();
+            var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
+            if (subject == null)
+                return NotFound();
+
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null || subject.CollegeId != sessionCollegeId.Value)
+                    return Unauthorized();
+
+                model.CollegeId = sessionCollegeId.Value;
+            }
 
             if (!ModelState.IsValid)
                 return View(model);
+
+            bool duplicate = _context.Subjects.Any(s =>
+                s.Id != id &&
+                s.Name.ToLower() == model.Name.ToLower() &&
+                s.CollegeId == model.CollegeId);
+
+            if (duplicate)
+            {
+                ModelState.AddModelError("Name", "Subject already exists in this college.");
+                return View(subject);
+            }
 
             subject.Name = model.Name;
             _context.SaveChanges();
@@ -105,37 +214,41 @@ public IActionResult Create(Subject model)
         // SAFE DELETE
         // =========================
         public IActionResult Delete(int id)
-{
-    if (HttpContext.Session.GetString("Role") != "Admin")
-        return RedirectToAction("Index", "Dashboard");
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-    var subject = _context.Subjects
-        .Include(s => s.CourseSubjects)
-        .FirstOrDefault(s => s.Id == id);
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
 
-    if (subject == null)
-        return NotFound();
+            var subject = _context.Subjects
+                .Include(s => s.CourseSubjects)
+                .FirstOrDefault(s => s.Id == id);
 
-    // ❌ HARD BLOCK if exams exist
-    bool hasExams = _context.Exams.Any(e => e.SubjectId == id);
-    if (hasExams)
-    {
-        TempData["Error"] = "Cannot delete subject because exams already exist for it.";
-        return RedirectToAction(nameof(Index));
-    }
+            if (subject == null)
+                return NotFound();
 
-    // Safe cleanup
-    if (subject.CourseSubjects.Any())
-    {
-        _context.CourseSubjects.RemoveRange(subject.CourseSubjects);
-    }
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || subject.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
-    _context.Subjects.Remove(subject);
-    _context.SaveChanges();
+            bool hasExams = _context.Exams.Any(e => e.SubjectId == id);
+            if (hasExams)
+            {
+                TempData["Error"] = "Cannot delete subject because exams already exist for it.";
+                return RedirectToAction(nameof(Index));
+            }
 
-    TempData["Success"] = "Subject deleted successfully.";
-    return RedirectToAction(nameof(Index));
-}
+            if (subject.CourseSubjects.Any())
+            {
+                _context.CourseSubjects.RemoveRange(subject.CourseSubjects);
+            }
 
+            _context.Subjects.Remove(subject);
+            _context.SaveChanges();
+
+            TempData["Success"] = "Subject deleted successfully.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

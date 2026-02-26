@@ -19,6 +19,11 @@ namespace OnlineExamSystem.Models
         public int SelectedOptionId { get; set; }
         public Option SelectedOption { get; set; }
 
+        // Enforce college-level data isolation
+        [Required]
+        public int CollegeId { get; set; }
+        public College College { get; set; }
+
         public DateTime AnsweredAt { get; set; } = DateTime.UtcNow;
     }
 }

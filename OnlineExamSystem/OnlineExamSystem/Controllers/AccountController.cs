@@ -50,6 +50,12 @@ namespace OnlineExamSystem.Controllers
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("Role", user.Role);
 
+            // ✅ STORE COLLEGE ID (except Admin)
+            if (user.Role != "Admin" && user.CollegeId.HasValue)
+            {
+                HttpContext.Session.SetInt32("CollegeId", user.CollegeId.Value);
+            }
+
             string fullName = user.Username; // fallback
 
             if (user.Role == "Student")
@@ -59,6 +65,7 @@ namespace OnlineExamSystem.Controllers
 
                 if (student != null)
                     fullName = student.Name;
+                    HttpContext.Session.SetInt32("CollegeId", student.CollegeId);
             }
             else if (user.Role == "Teacher")
             {
@@ -69,6 +76,7 @@ namespace OnlineExamSystem.Controllers
                 {
                     fullName = teacher.Name;
                     HttpContext.Session.SetInt32("TeacherId", teacher.Id);
+                    HttpContext.Session.SetInt32("CollegeId", teacher.CollegeId);
                 }
             }
 
@@ -132,13 +140,19 @@ public IActionResult Register(RegisterViewModel model)
 
         if (user.Role == "Student")
         {
-            var student = new Student
-            {
-                UserId = user.Id,
-                Name = model.Name
-            };
+                    if (model.CollegeId == null)
+                    {
+                        throw new Exception("CollegeId is required for Student.");
+                    }
 
-            _context.Students.Add(student);
+                    var student = new Student
+                    {
+                        UserId = user.Id,
+                        Name = model.Name,
+                        CollegeId = model.CollegeId.Value
+                    };
+
+                    _context.Students.Add(student);
         }
         else if (user.Role == "Teacher")
         {

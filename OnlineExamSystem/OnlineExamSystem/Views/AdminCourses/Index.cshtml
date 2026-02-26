@@ -2,13 +2,16 @@
 
 @{
     ViewData["Title"] = "Course Management";
+    var role = Context.Session.GetString("Role");
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
+    var selectedCollegeId = ViewBag.SelectedCollegeId as int?;
 }
 
 <h2 class="mb-4">Course Management</h2>
 
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show mb-3">
         @TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -16,77 +19,140 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+    <div class="alert alert-success alert-dismissible fade show mb-3">
         @TempData["Success"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<form method="get" class="d-flex mb-3" style="max-width: 400px;">
-    <input type="text"
-           name="search"
-           value="@ViewBag.Search"
-           class="form-control me-2"
-           placeholder="Search by course name" />
-    <button type="submit" class="btn btn-outline-secondary">
-        Search
-    </button>
-</form>
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
 
-<a asp-action="Create" class="btn btn-success mb-3">
-    + Add Course
-</a>
+        <form method="get" class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+                <label class="form-label">Search by Course Name</label>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Enter course name" />
+            </div>
+
+            @if (role == "Admin")
+            {
+                <div class="col-md-4">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select">
+                        <option value="">All Colleges</option>
+                        @if (colleges != null)
+                        {
+                            foreach (var college in colleges)
+                            {
+                                <option value="@college.Id"
+                                        selected="@(selectedCollegeId == college.Id)">
+                                    @college.Name
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    Apply Filters
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary">
+                    Reset
+                </a>
+
+                <a asp-action="Create" class="btn btn-success ms-auto">
+                    + Add Course
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
 
 @if (Model.Any())
 {
-    <table class="table table-bordered table-striped align-middle">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var course in Model)
-            {
-                <tr>
-                    <td>@course.Name</td>
-                    <td>
-                        <div class="d-flex gap-2 flex-wrap">
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
 
-                            <!-- ✅ NEW: Manage Subjects -->
-                            <a asp-action="Subjects"
-                               asp-route-id="@course.Id"
-                               class="btn btn-sm btn-info">
-                                Subjects
-                            </a>
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
 
-                            <a asp-action="Edit"
-                               asp-route-id="@course.Id"
-                               class="btn btn-sm btn-warning">
-                                Edit
-                            </a>
+                        @if (role == "Admin")
+                        {
+                            <th>College</th>
+                        }
 
-                            <a asp-action="Delete"
-                               asp-route-id="@course.Id"
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('Are you sure you want to delete this course?');">
-                                Delete
-                            </a>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var course in Model)
+                    {
+                        <tr>
+                            <td>@course.Name</td>
 
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    @{
+                                        var collegeName = colleges?
+                                        .FirstOrDefault(c => c.Id == course.CollegeId)?.Name;
+                                    }
+                                    <span class="badge bg-info text-dark">
+                                        @collegeName
+                                    </span>
+                                </td>
+                            }
+
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap">
+
+                                    <a asp-action="Subjects"
+                                       asp-route-id="@course.Id"
+                                       class="btn btn-sm btn-info">
+                                        Subjects
+                                    </a>
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@course.Id"
+                                       class="btn btn-sm btn-warning">
+                                        Edit
+                                    </a>
+
+                                    <a asp-action="Delete"
+                                       asp-route-id="@course.Id"
+                                       class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Are you sure you want to delete this course?');">
+                                        Delete
+                                    </a>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+    </div>
 }
 else
 {
     <div class="border rounded p-4 text-center text-muted mt-4">
         <h5>No courses found</h5>
         <p class="mb-0">
-            Try searching by course name or add a new course.
+            Try adjusting filters or add a new course.
         </p>
     </div>
 }

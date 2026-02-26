@@ -5,6 +5,7 @@ using OnlineExamSystem.Models.ViewModels;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(AdminAuthorizeFilter))]
     public class AdminCoursesController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -17,21 +18,49 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         // INDEX + SEARCH
         // -------------------------------
-        public IActionResult Index(string search)
+        public IActionResult Index(string search, int? collegeId)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "Admin")
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
             var coursesQuery = _context.Courses.AsQueryable();
 
+            // 🔐 TeacherAdmin → Only own college
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                coursesQuery = coursesQuery
+                    .Where(c => c.CollegeId == sessionCollegeId.Value);
+            }
+            else if (role == "Admin")
+            {
+                // 🏫 Optional college filter for Admin
+                if (collegeId.HasValue)
+                {
+                    coursesQuery = coursesQuery
+                        .Where(c => c.CollegeId == collegeId.Value);
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+
+                ViewBag.SelectedCollegeId = collegeId;
+            }
+
             if (!string.IsNullOrWhiteSpace(search))
             {
-                coursesQuery = coursesQuery.Where(c =>
-                    c.Name != null && c.Name.Contains(search));
+                coursesQuery = coursesQuery
+                    .Where(c => c.Name != null && c.Name.Contains(search));
             }
 
             ViewBag.Search = search;
+
             return View(coursesQuery.ToList());
         }
 
@@ -40,8 +69,18 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Create()
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
+
+            if (role == "Admin")
+            {
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+            }
 
             return View();
         }
@@ -49,21 +88,70 @@ namespace OnlineExamSystem.Controllers
         [HttpPost]
         public IActionResult Create(Course model)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            Console.WriteLine("COURSE CREATE POST HIT"); 
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
             if (string.IsNullOrWhiteSpace(model.Name))
             {
                 ModelState.AddModelError("Name", "Course name is required.");
+            }
+
+            // 🔐 Multi-tenant enforcement
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                model.CollegeId = sessionCollegeId.Value;
+            }
+            else if (role == "Admin")
+            {
+                if (model.CollegeId == 0)
+                {
+                    ModelState.AddModelError("CollegeId", "College selection is required.");
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+            }
+
+            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+            {
+                Console.WriteLine("Model Error: " + error.ErrorMessage);
+            }
+            if (!ModelState.IsValid)
+            {
+                if (role == "Admin")
+                {
+                    ViewBag.Colleges = _context.Colleges
+                        .Where(c => c.IsActive)
+                        .ToList();
+                }
+
                 return View(model);
             }
 
-            bool exists = _context.Courses
-                .Any(c => c.Name.ToLower() == model.Name.ToLower());
+            bool exists = _context.Courses.Any(c =>
+                c.Name.ToLower() == model.Name.ToLower() &&
+                c.CollegeId == model.CollegeId);
 
             if (exists)
             {
-                ModelState.AddModelError("Name", "A course with this name already exists.");
+                ModelState.AddModelError("Name",
+                    "A course with this name already exists in this college.");
+
+                if (role == "Admin")
+                {
+                    ViewBag.Colleges = _context.Colleges
+                        .Where(c => c.IsActive)
+                        .ToList();
+                }
+
                 return View(model);
             }
 
@@ -79,12 +167,19 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Edit(int id)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var course = _context.Courses.Find(id);
+            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
             if (course == null)
                 return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
             return View(course);
         }
@@ -92,12 +187,23 @@ namespace OnlineExamSystem.Controllers
         [HttpPost]
         public IActionResult Edit(int id, Course model)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var course = _context.Courses.Find(id);
+            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
             if (course == null)
                 return NotFound();
+
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value)
+                    return Unauthorized();
+
+                model.CollegeId = sessionCollegeId.Value;
+            }
 
             if (string.IsNullOrWhiteSpace(model.Name))
             {
@@ -105,12 +211,14 @@ namespace OnlineExamSystem.Controllers
                 return View(course);
             }
 
-            bool duplicate = _context.Courses
-                .Any(c => c.Id != id && c.Name.ToLower() == model.Name.ToLower());
+            bool duplicate = _context.Courses.Any(c =>
+                c.Id != id &&
+                c.Name.ToLower() == model.Name.ToLower() &&
+                c.CollegeId == model.CollegeId);
 
             if (duplicate)
             {
-                ModelState.AddModelError("Name", "A course with this name already exists.");
+                ModelState.AddModelError("Name", "A course with this name already exists in this college.");
                 return View(course);
             }
 
@@ -126,12 +234,19 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Delete(int id)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var course = _context.Courses.Find(id);
+            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
             if (course == null)
                 return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
             _context.Courses.Remove(course);
             _context.SaveChanges();
@@ -141,96 +256,104 @@ namespace OnlineExamSystem.Controllers
         }
 
         // =====================================================
-        // PHASE 2.1 — COURSE ⇄ SUBJECT MANAGEMENT
+        // COURSE ⇄ SUBJECT MANAGEMENT
         // =====================================================
 
-        // -------------------------------
-        // VIEW ASSIGNED SUBJECTS
-        // -------------------------------
         public IActionResult Subjects(int id)
-{
-    var role = HttpContext.Session.GetString("Role");
-    if (role != "Admin")
-        return RedirectToAction("Index", "Dashboard");
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-    // 1️⃣ Get course
-    var course = _context.Courses
-        .AsNoTracking()
-        .FirstOrDefault(c => c.Id == id);
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
 
-    if (course == null)
-        return NotFound();
+            var course = _context.Courses
+                .AsNoTracking()
+                .FirstOrDefault(c => c.Id == id);
 
-    // 2️⃣ Get all subjects
-    var allSubjects = _context.Subjects
-        .AsNoTracking()
-        .OrderBy(s => s.Name)
-        .ToList();
+            if (course == null)
+                return NotFound();
 
-    // 3️⃣ Get already-selected subject IDs
-    var selectedSubjectIds = _context.CourseSubjects
-        .Where(cs => cs.CourseId == id)
-        .Select(cs => cs.SubjectId)
-        .ToList();
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
-    // 4️⃣ CREATE THE VIEWMODEL (this is `vm`)
-    var vm = new CourseSubjectsViewModel
-    {
-        Course = course,
-        AllSubjects = allSubjects,
-        SelectedSubjectIds = selectedSubjectIds
-    };
+            var allSubjects = _context.Subjects
+                .Where(s => role == "Admin" || s.CollegeId == sessionCollegeId)
+                .OrderBy(s => s.Name)
+                .ToList();
 
-    // 5️⃣ Pass it to the view
-    return View(vm);
-}
-// POST: AdminCourses/Subjects
-[HttpPost]
-[ValidateAntiForgeryToken]
-public IActionResult Subjects(int courseId, List<int> selectedSubjectIds)
-{
-    var role = HttpContext.Session.GetString("Role");
-    if (role != "Admin")
-        return RedirectToAction("Index", "Dashboard");
+            var selectedSubjectIds = _context.CourseSubjects
+                .Where(cs => cs.CourseId == id)
+                .Select(cs => cs.SubjectId)
+                .ToList();
 
-    var course = _context.Courses.FirstOrDefault(c => c.Id == courseId);
-    if (course == null)
-        return NotFound();
-
-    // Remove existing mappings
-    var existing = _context.CourseSubjects
-        .Where(cs => cs.CourseId == courseId);
-
-    _context.CourseSubjects.RemoveRange(existing);
-
-    // Add new mappings
-    if (selectedSubjectIds != null && selectedSubjectIds.Any())
-    {
-        var mappings = selectedSubjectIds.Select(subjectId =>
-            new CourseSubject
+            var vm = new CourseSubjectsViewModel
             {
-                CourseId = courseId,
-                SubjectId = subjectId
-            });
+                Course = course,
+                AllSubjects = allSubjects,
+                SelectedSubjectIds = selectedSubjectIds
+            };
 
-        _context.CourseSubjects.AddRange(mappings);
-    }
+            return View(vm);
+        }
 
-    _context.SaveChanges();
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Subjects(int courseId, List<int> selectedSubjectIds)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-    TempData["Success"] = "Subjects updated successfully.";
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
 
-    return RedirectToAction(nameof(Subjects), new { id = courseId });
-}
+            var course = _context.Courses.FirstOrDefault(c => c.Id == courseId);
+            if (course == null)
+                return NotFound();
 
-        
-        // -------------------------------
-        // REMOVE SUBJECT
-        // -------------------------------
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
+
+            var existing = _context.CourseSubjects
+                .Where(cs => cs.CourseId == courseId);
+
+            _context.CourseSubjects.RemoveRange(existing);
+
+            if (selectedSubjectIds != null && selectedSubjectIds.Any())
+            {
+                var mappings = selectedSubjectIds.Select(subjectId =>
+                    new CourseSubject
+                    {
+                        CourseId = courseId,
+                        SubjectId = subjectId
+                    });
+
+                _context.CourseSubjects.AddRange(mappings);
+            }
+
+            _context.SaveChanges();
+
+            TempData["Success"] = "Subjects updated successfully.";
+            return RedirectToAction(nameof(Subjects), new { id = courseId });
+        }
+
         public IActionResult RemoveSubject(int courseId, int subjectId)
         {
-            if (HttpContext.Session.GetString("Role") != "Admin")
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
+
+            var course = _context.Courses.FirstOrDefault(c => c.Id == courseId);
+            if (course == null)
+                return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
             var mapping = _context.CourseSubjects
                 .FirstOrDefault(cs => cs.CourseId == courseId && cs.SubjectId == subjectId);

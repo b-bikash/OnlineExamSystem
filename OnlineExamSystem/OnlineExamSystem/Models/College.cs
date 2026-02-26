@@ -20,6 +20,7 @@ namespace OnlineExamSystem.Models
 
         public ICollection<Student> Students { get; set; }
         public ICollection<Teacher> Teachers { get; set; }
+        public ICollection<User> Users { get; set; }
         public ICollection<CollegeCourse> CollegeCourses { get; set; }
     }
 }

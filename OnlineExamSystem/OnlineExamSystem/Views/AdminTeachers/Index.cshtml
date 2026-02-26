@@ -2,48 +2,126 @@
 
 @{
     ViewData["Title"] = "Teacher Management";
+    var role = Context.Session.GetString("Role");
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
+    var selectedCollegeId = ViewBag.SelectedCollegeId as int?;
 }
 
-<h2>Teacher Management</h2>
+<h2 class="mb-4">Teacher Management</h2>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Subjects</th>
-            <th style="width:180px;">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var teacher in Model)
-        {
-            <tr>
-                <td>@teacher.Name</td>
-                <td>@teacher.User?.Email</td>
-                <td>
-                    @if (teacher.TeacherSubjects.Any())
-                    {
-                        <ul class="mb-0">
-                            @foreach (var ts in teacher.TeacherSubjects)
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+
+        <form method="get" class="row g-3 align-items-end">
+
+            @if (role == "Admin")
+            {
+                <div class="col-md-4">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select">
+                        <option value="">All Colleges</option>
+                        @if (colleges != null)
+                        {
+                            foreach (var college in colleges)
                             {
-                                <li>@ts.Subject.Name</li>
+                                <option value="@college.Id"
+                                        selected="@(selectedCollegeId == college.Id)">
+                                    @college.Name
+                                </option>
                             }
-                        </ul>
-                    }
-                    else
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    Apply Filter
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary">
+                    Reset
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+
+                        @if (role == "Admin")
+                        {
+                            <th>College</th>
+                        }
+
+                        <th>Subjects</th>
+                        <th style="width:200px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var teacher in Model)
                     {
-                        <span class="text-muted">No subjects assigned</span>
+                        <tr>
+                            <td>@teacher.Name</td>
+                            <td>@teacher.User?.Email</td>
+
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @teacher.College?.Name
+                                    </span>
+                                </td>
+                            }
+
+                            <td>
+                                @if (teacher.TeacherSubjects.Any())
+                                {
+                                    <ul class="mb-0">
+                                        @foreach (var ts in teacher.TeacherSubjects)
+                                        {
+                                            <li>@ts.Subject.Name</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No subjects assigned</span>
+                                }
+                            </td>
+
+                            <td>
+                                <a asp-action="AssignSubjects"
+                                   asp-route-id="@teacher.Id"
+                                   class="btn btn-sm btn-warning">
+                                    Assign Subjects
+                                </a>
+                            </td>
+                        </tr>
                     }
-                </td>
-                <td>
-                    <a asp-action="AssignSubjects"
-                       asp-route-id="@teacher.Id"
-                       class="btn btn-sm btn-warning">
-                        Assign Subjects
-                    </a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+}
+else
+{
+    <div class="border rounded p-4 text-center text-muted mt-4">
+        <h5>No teachers found</h5>
+        <p class="mb-0">
+            Try adjusting the filter.
+        </p>
+    </div>
+}

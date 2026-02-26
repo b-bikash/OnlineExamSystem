@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace OnlineExamSystem.Models
 {
@@ -7,18 +8,24 @@ namespace OnlineExamSystem.Models
     {
         public int Id { get; set; }
 
+        [Required]
         public int StudentId { get; set; }
         public Student Student { get; set; }
 
+        [Required]
         public int ExamId { get; set; }
         public Exam Exam { get; set; }
+
+        // Enforce college-level data isolation
+        [Required]
+        public int CollegeId { get; set; }
+        public College College { get; set; }
 
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
 
         public int Score { get; set; }
 
-        // NEW: Answers given by student for this attempt
         public ICollection<StudentAnswer> StudentAnswers { get; set; }
     }
 }

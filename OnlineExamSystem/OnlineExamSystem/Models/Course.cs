@@ -10,15 +10,17 @@ namespace OnlineExamSystem.Models
         [Required]
         [MaxLength(200)]
         public string Name { get; set; }
+        public int CollegeId { get; set; }
+        public College? College { get; set; }
 
         // -------------------------------
         // NAVIGATION PROPERTIES
         // -------------------------------
 
         // Colleges offering this course
-        public ICollection<CollegeCourse> CollegeCourses { get; set; }
+        public ICollection<CollegeCourse>? CollegeCourses { get; set; }
 
         // Subjects included in this course
-        public ICollection<CourseSubject> CourseSubjects { get; set; }
+        public ICollection<CourseSubject>? CourseSubjects { get; set; }
     }
 }

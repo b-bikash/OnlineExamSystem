@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(SessionValidationFilter))]
     public class QuestionsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -40,6 +41,22 @@ namespace OnlineExamSystem.Controllers
             return hasAttempts || isLive;
         }
 
+        private bool HasExamAccess(Exam exam)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var collegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role == "Admin")
+                return true;
+
+            if (collegeId == null)
+                return false;
+
+            if (role == "Teacher" || role == "TeacherAdmin")
+                return exam.CollegeId == collegeId.Value;
+
+            return false;
+        }
         private void RecalculateExamTotalMarks(int examId)
         {
             var totalMarks = _context.Questions
@@ -59,9 +76,18 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Index(int examId)
         {
+            var collegeId = HttpContext.Session.GetInt32("CollegeId");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (collegeId == null || (role != "Teacher" && role != "TeacherAdmin" && role != "Admin"))
+                return Unauthorized();
+
             var exam = _context.Exams
                 .AsNoTracking()
-                .FirstOrDefault(e => e.Id == examId);
+                .FirstOrDefault(e =>
+                    e.Id == examId &&
+                    (role == "Admin" || e.CollegeId == collegeId.Value)
+                );
 
             if (exam == null)
                 return NotFound();
@@ -88,6 +114,7 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Create(int examId)
         {
+            var collegeId = HttpContext.Session.GetInt32("CollegeId"); 
             var exam = _context.Exams.FirstOrDefault(e => e.Id == examId);
             if (exam == null)
                 return NotFound();
@@ -118,6 +145,7 @@ namespace OnlineExamSystem.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create(QuestionCreateViewModel model)
         {
+            var collegeId = HttpContext.Session.GetInt32("CollegeId"); 
             var exam = _context.Exams.FirstOrDefault(e => e.Id == model.ExamId);
             if (exam == null)
                 return NotFound();
@@ -154,7 +182,8 @@ namespace OnlineExamSystem.Controllers
             {
                 Text = model.QuestionText,
                 ExamId = model.ExamId,
-                Marks = model.Marks
+                Marks = model.Marks,
+                CollegeId = exam.CollegeId
             };
 
             // handle image upload
@@ -179,6 +208,7 @@ namespace OnlineExamSystem.Controllers
                 _context.Options.Add(new Option
                 {
                     QuestionId = question.Id,
+                    CollegeId = exam.CollegeId,
                     Text = filteredOptions[i],
                     IsCorrect = (i == model.CorrectOptionIndex.Value)
                 });
@@ -195,6 +225,7 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         public IActionResult Edit(int id)
         {
+            var collegeId = HttpContext.Session.GetInt32("CollegeId"); 
             var question = _context.Questions
                 .Include(q => q.Options)
                 .FirstOrDefault(q => q.Id == id);
@@ -226,7 +257,7 @@ namespace OnlineExamSystem.Controllers
                     OptionId = o.Id,
                     Text = o.Text
                 }).ToList(),
-                CorrectOptionId = question.Options.Single(o => o.IsCorrect).Id,
+                CorrectOptionId = question.Options.FirstOrDefault(o => o.IsCorrect)?.Id ?? 0,
                 ExistingImageUrl = question.ImageUrl // Set existing image URL
             };
 
@@ -240,6 +271,8 @@ namespace OnlineExamSystem.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(QuestionEditViewModel model)
         {
+            var collegeId = HttpContext.Session.GetInt32("CollegeId");
+            
             // 🔴 IMPORTANT: Clear old validation state
             ModelState.Clear();
 
@@ -326,6 +359,8 @@ namespace OnlineExamSystem.Controllers
                 {
                     question.Options.Add(new Option
                     {
+                        QuestionId = question.Id,
+                        CollegeId = question.CollegeId,
                         Text = optVm.Text,
                         IsCorrect = false
                     });
@@ -378,10 +413,16 @@ namespace OnlineExamSystem.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
-            var question = _context.Questions.FirstOrDefault(q => q.Id == id);
+            var collegeId = HttpContext.Session.GetInt32("CollegeId"); 
+            var question = _context.Questions.Include(q => q.Options).FirstOrDefault(q => q.Id == id);
             if (question == null)
                 return NotFound();
 
+            var exam = _context.Exams.FirstOrDefault(e => e.Id == question.ExamId);
+
+            if (exam == null || !HasExamAccess(exam))
+                return Unauthorized(); 
+            
             var examId = question.ExamId;
 
             // 🔒 FAIRNESS RULE ENFORCEMENT
@@ -395,6 +436,7 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", new { examId });
             }
 
+            _context.Options.RemoveRange(question.Options);
             _context.Questions.Remove(question);
             _context.SaveChanges();
             RecalculateExamTotalMarks(examId);

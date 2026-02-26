@@ -7,6 +7,7 @@ using System.Linq;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(SessionValidationFilter))]
     public class ExamAttemptsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -81,16 +82,22 @@ namespace OnlineExamSystem.Controllers
                 .AsNoTracking()
                 .FirstOrDefault(a =>
                     a.ExamId == examId &&
-                    a.StudentId == student.Id
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId   // 🔐 STRICT TENANT FILTER
                 );
 
             if (existingAttempt != null)
                 return RedirectToAction("AttemptAll", new { attemptId = existingAttempt.Id });
 
+            // 🔐 DEFENSIVE TENANT VALIDATION
+            if (exam.CollegeId != student.CollegeId)
+                return Unauthorized();
+
             var attempt = new ExamAttempt
             {
                 ExamId = examId,
                 StudentId = student.Id,
+                CollegeId = student.CollegeId,  // 🔐 MANDATORY TENANT WRITE
                 StartTime = DateTime.Now
             };
 
@@ -107,18 +114,38 @@ namespace OnlineExamSystem.Controllers
         public IActionResult AttemptAll(int attemptId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
                 return RedirectToAction("Login", "Account");
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized();
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized();
 
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
                     .ThenInclude(e => e.Questions)
                         .ThenInclude(q => q.Options)
                 .Include(a => a.StudentAnswers)
-                .FirstOrDefault(a => a.Id == attemptId);
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&                  // 🔐 Ownership check
+                    a.CollegeId == student.CollegeId              // 🔐 Tenant isolation
+                );
 
             if (attempt == null)
-                return NotFound();
+                return Unauthorized();
 
             if (attempt.EndTime != null)
                 return RedirectToAction("Index", "Exams");
@@ -132,9 +159,33 @@ namespace OnlineExamSystem.Controllers
         [HttpPost]
         public IActionResult SaveAnswer(int attemptId, int questionId, int selectedOptionId, int questionIndex)
         {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
+                return Unauthorized();
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized();
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized();
+
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
-                .FirstOrDefault(a => a.Id == attemptId);
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId
+                );
 
             if (attempt == null || attempt.EndTime != null)
                 return Unauthorized();
@@ -147,10 +198,31 @@ namespace OnlineExamSystem.Controllers
             if (DateTime.Now > actualEndTime.AddMinutes(1))
                 return Unauthorized();
 
+            // 🔐 Ensure question belongs to this exam + college
+            var questionExists = _context.Questions.Any(q =>
+                q.Id == questionId &&
+                q.ExamId == attempt.ExamId &&
+                q.CollegeId == student.CollegeId
+            );
+
+            if (!questionExists)
+                return Unauthorized();
+
+            // 🔐 Ensure option belongs to this question + college
+            var optionExists = _context.Options.Any(o =>
+                o.Id == selectedOptionId &&
+                o.QuestionId == questionId &&
+                o.CollegeId == student.CollegeId
+            );
+
+            if (!optionExists)
+                return Unauthorized();
+
             var existingAnswer = _context.StudentAnswers
                 .FirstOrDefault(sa =>
                     sa.ExamAttemptId == attemptId &&
-                    sa.QuestionId == questionId
+                    sa.QuestionId == questionId &&
+                    sa.CollegeId == student.CollegeId
                 );
 
             if (existingAnswer == null)
@@ -160,6 +232,7 @@ namespace OnlineExamSystem.Controllers
                     ExamAttemptId = attemptId,
                     QuestionId = questionId,
                     SelectedOptionId = selectedOptionId,
+                    CollegeId = student.CollegeId,   // 🔐 REQUIRED
                     AnsweredAt = DateTime.UtcNow
                 });
             }
@@ -181,10 +254,34 @@ namespace OnlineExamSystem.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult SubmitAll(int attemptId, Dictionary<int, int> answers)
         {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
+                return Unauthorized();
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized();
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized();
+
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
                     .ThenInclude(e => e.Questions)
-                .FirstOrDefault(a => a.Id == attemptId);
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId
+                );
 
             if (attempt == null || attempt.EndTime != null)
                 return Unauthorized();
@@ -194,27 +291,47 @@ namespace OnlineExamSystem.Controllers
                 ? attempt.Exam.EndDateTime.Value
                 : designatedEndTime;
 
-            // Handle null answers (e.g., student submitted without answering anything)
             if (answers == null)
-            {
                 answers = new Dictionary<int, int>();
-            }
 
-            // Only process incoming answers if within 2-minute grace period
             if (DateTime.Now <= actualEndTime.AddMinutes(2))
             {
                 var oldAnswers = _context.StudentAnswers
-                    .Where(sa => sa.ExamAttemptId == attemptId);
+                    .Where(sa =>
+                        sa.ExamAttemptId == attemptId &&
+                        sa.CollegeId == student.CollegeId
+                    );
 
                 _context.StudentAnswers.RemoveRange(oldAnswers);
 
                 foreach (var entry in answers)
                 {
+                    // 🔐 Validate question belongs to this exam + college
+                    var validQuestion = _context.Questions.Any(q =>
+                        q.Id == entry.Key &&
+                        q.ExamId == attempt.ExamId &&
+                        q.CollegeId == student.CollegeId
+                    );
+
+                    if (!validQuestion)
+                        continue;
+
+                    // 🔐 Validate option belongs to this question + college
+                    var validOption = _context.Options.Any(o =>
+                        o.Id == entry.Value &&
+                        o.QuestionId == entry.Key &&
+                        o.CollegeId == student.CollegeId
+                    );
+
+                    if (!validOption)
+                        continue;
+
                     _context.StudentAnswers.Add(new StudentAnswer
                     {
                         ExamAttemptId = attemptId,
                         QuestionId = entry.Key,
                         SelectedOptionId = entry.Value,
+                        CollegeId = student.CollegeId,  // 🔐 REQUIRED
                         AnsweredAt = DateTime.UtcNow
                     });
                 }
@@ -222,12 +339,13 @@ namespace OnlineExamSystem.Controllers
                 _context.SaveChanges();
             }
 
-            // Calculate score (will be 0 if answers is empty)
             attempt.Score =
                 (from sa in _context.StudentAnswers
                  join opt in _context.Options on sa.SelectedOptionId equals opt.Id
                  join q in _context.Questions on sa.QuestionId equals q.Id
-                 where sa.ExamAttemptId == attemptId && opt.IsCorrect
+                 where sa.ExamAttemptId == attemptId
+                       && sa.CollegeId == student.CollegeId
+                       && opt.IsCorrect
                  select q.Marks).Sum();
 
             attempt.EndTime = DateTime.Now;
@@ -244,6 +362,8 @@ namespace OnlineExamSystem.Controllers
         public IActionResult Result(int attemptId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
@@ -254,12 +374,38 @@ namespace OnlineExamSystem.Controllers
             if (user == null || !user.IsActive)
                 return Unauthorized();
 
-            var student = _context.Students
-                .AsNoTracking()
-                .FirstOrDefault(s => s.UserId == user.Id);
+            Student student = null;
+            Teacher teacher = null;
 
-            if (user.Role == "Student" && student == null)
-                return Unauthorized();
+            if (user.Role == "Student")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                student = _context.Students
+                    .AsNoTracking()
+                    .FirstOrDefault(s =>
+                        s.UserId == user.Id &&
+                        s.CollegeId == sessionCollegeId.Value);
+
+                if (student == null)
+                    return Unauthorized();
+            }
+
+            if (user.Role == "Teacher")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                teacher = _context.Teachers
+                    .AsNoTracking()
+                    .FirstOrDefault(t =>
+                        t.UserId == user.Id &&
+                        t.CollegeId == sessionCollegeId.Value);
+
+                if (teacher == null)
+                    return Unauthorized();
+            }
 
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
@@ -267,22 +413,25 @@ namespace OnlineExamSystem.Controllers
                         .ThenInclude(q => q.Options)
                 .Include(a => a.StudentAnswers)
                 .AsNoTracking()
-                .FirstOrDefault(a => a.Id == attemptId);
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.CollegeId == sessionCollegeId
+                );
 
             if (attempt == null)
-                return NotFound();
+                return Unauthorized();
 
-            // AUTHORIZATION: Student (Owner) OR Teacher (Creator of Exam)
-            bool isStudentOwner = (user.Role == "Student" && attempt.StudentId == student?.Id);
+            bool isStudentOwner = false;
             bool isTeacherCreator = false;
 
-            if (user.Role == "Teacher")
+            if (student != null)
             {
-                var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
-                if (teacher != null && attempt.Exam.CreatedByTeacherId == teacher.Id)
-                {
-                    isTeacherCreator = true;
-                }
+                isStudentOwner = attempt.StudentId == student.Id;
+            }
+
+            if (teacher != null)
+            {
+                isTeacherCreator = attempt.Exam.CreatedByTeacherId == teacher.Id;
             }
 
             if (!isStudentOwner && !isTeacherCreator)
@@ -291,8 +440,8 @@ namespace OnlineExamSystem.Controllers
             if (attempt.EndTime == null)
                 return RedirectToAction("Index", "Exams");
 
-            // Teacher can see results anytime. Student only after exam end time.
-            if (isStudentOwner && attempt.Exam.EndDateTime.HasValue &&
+            if (isStudentOwner &&
+                attempt.Exam.EndDateTime.HasValue &&
                 DateTime.Now < attempt.Exam.EndDateTime.Value)
             {
                 TempData["ErrorMessage"] = "Results will be available after the exam ends.";

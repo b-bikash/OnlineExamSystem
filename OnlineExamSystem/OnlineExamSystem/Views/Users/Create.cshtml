@@ -16,18 +16,34 @@
 
         <form method="post">
 
-            <!-- ROLE (FIRST, LIKE REGISTER PAGE) -->
+            <!-- ROLE -->
             <div class="mb-3">
                 <label class="form-label">Role</label>
                 <select name="Role" id="roleSelect" class="form-select" required>
                     <option value="">-- Select Role --</option>
                     <option value="Student">Student</option>
                     <option value="Teacher">Teacher</option>
+                    <option value="TeacherAdmin">Teacher Admin</option>
                     <option value="Admin">Admin</option>
                 </select>
             </div>
 
-            <!-- FULL NAME (STUDENT / TEACHER ONLY) -->
+            <!-- COLLEGE -->
+            <div class="mb-3">
+                <label class="form-label">College</label>
+                <select name="CollegeId" id="collegeSelect" class="form-select">
+                    <option value="">-- Select College --</option>
+                    @foreach (var college in ViewBag.Colleges)
+                    {
+                        <option value="@college.Id">@college.Name</option>
+                    }
+                </select>
+                <span class="text-danger" id="collegeValidation" style="display:none;">
+                    College is required for this role.
+                </span>
+            </div>
+
+            <!-- FULL NAME -->
             <div class="mb-3" id="fullNameWrapper">
                 <label class="form-label">Full Name</label>
                 <input name="FullName" id="fullNameInput" class="form-control" />
@@ -65,9 +81,15 @@
         const roleSelect = document.getElementById("roleSelect");
         const fullNameWrapper = document.getElementById("fullNameWrapper");
         const fullNameInput = document.getElementById("fullNameInput");
+        const collegeSelect = document.getElementById("collegeSelect");
+        const collegeValidation = document.getElementById("collegeValidation");
 
-        function toggleFullName() {
-            if (roleSelect.value === "Admin") {
+        function toggleFields() {
+
+            const role = roleSelect.value;
+
+            // FULL NAME LOGIC
+            if (role === "Admin" || role === "") {
                 fullNameWrapper.style.display = "none";
                 fullNameInput.value = "";
                 fullNameInput.removeAttribute("required");
@@ -75,11 +97,42 @@
                 fullNameWrapper.style.display = "block";
                 fullNameInput.setAttribute("required", "required");
             }
+
+            // COLLEGE LOGIC
+            if (role === "Admin") {
+                collegeSelect.value = "";
+                collegeSelect.setAttribute("disabled", "disabled");
+                collegeSelect.removeAttribute("required");
+                collegeValidation.style.display = "none";
+            } else if (role === "") {
+                collegeSelect.value = "";
+                collegeSelect.setAttribute("disabled", "disabled");
+                collegeSelect.removeAttribute("required");
+                collegeValidation.style.display = "none";
+            } else {
+                collegeSelect.removeAttribute("disabled");
+                collegeSelect.setAttribute("required", "required");
+            }
         }
 
-        roleSelect.addEventListener("change", toggleFullName);
+        // CLIENT VALIDATION BEFORE SUBMIT
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const role = roleSelect.value;
 
-        // run once on page load
-        toggleFullName();
+            if (role !== "Admin" && role !== "") {
+                if (!collegeSelect.value) {
+                    e.preventDefault();
+                    collegeValidation.style.display = "block";
+                }
+            }
+        });
+
+        roleSelect.addEventListener("change", function () {
+            collegeValidation.style.display = "none";
+            toggleFields();
+        });
+
+        // INITIAL LOAD
+        toggleFields();
     </script>
 }

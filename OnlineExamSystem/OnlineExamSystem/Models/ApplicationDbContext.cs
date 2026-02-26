@@ -37,6 +37,14 @@ namespace OnlineExamSystem.Models
                 .IsUnique();
 
             // -------------------------------
+            // ENFORCE ONE TEACHERADMIN PER COLLEGE
+            // -------------------------------
+            modelBuilder.Entity<User>()
+                .HasIndex(u => new { u.CollegeId, u.Role })
+                .IsUnique()
+                .HasFilter("[Role] = 'TeacherAdmin' AND [CollegeId] IS NOT NULL");
+
+            // -------------------------------
             // STUDENT ANSWER (UNIQUE)
             // -------------------------------
             modelBuilder.Entity<StudentAnswer>()
@@ -50,7 +58,7 @@ namespace OnlineExamSystem.Models
                 .HasOne(o => o.Question)
                 .WithMany(q => q.Options)
                 .HasForeignKey(o => o.QuestionId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
             // STUDENT ANSWER → OPTION
@@ -101,6 +109,14 @@ namespace OnlineExamSystem.Models
                 .HasOne(ea => ea.Exam)
                 .WithMany(e => e.ExamAttempts)
                 .HasForeignKey(ea => ea.ExamId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // -------------------------------
+            // STUDENT ANSWER → EXAM ATTEMPT
+            // -------------------------------
+            modelBuilder.Entity<StudentAnswer>()
+                .HasOne(sa => sa.ExamAttempt)
+                .WithMany(ea => ea.StudentAnswers)
+                .HasForeignKey(sa => sa.ExamAttemptId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------------------------------
@@ -158,6 +174,12 @@ namespace OnlineExamSystem.Models
                 .HasOne(e => e.CreatedByTeacher)
                 .WithMany()
                 .HasForeignKey(e => e.CreatedByTeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Course>()
+                .HasOne(c => c.College)
+                .WithMany()
+                .HasForeignKey(c => c.CollegeId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
+using OnlineExamSystem.Models.ViewModels;
 using System.Linq;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(SessionValidationFilter))]
     public class StudentsController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -32,26 +34,23 @@ namespace OnlineExamSystem.Controllers
             if (student == null)
                 return NotFound();
 
-            // COURSES (unchanged, already working)
             var courses = _context.Courses.ToList();
 
-
-            // COLLEGES — 🔥 FIXED LOGIC
             var colleges = _context.Colleges
                 .Where(c =>
-                    c.IsActive ||                 // all active colleges
-                    c.Id == student.CollegeId    // OR currently selected
+                    c.IsActive ||
+                    c.Id == student.CollegeId
                 )
                 .ToList();
 
             ViewBag.Courses = courses;
             ViewBag.Colleges = colleges;
 
-            // View vs Edit mode
             ViewBag.IsEditMode = !student.IsProfileCompleted;
 
             return View(student);
         }
+
         public IActionResult EditProfile()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -67,21 +66,43 @@ namespace OnlineExamSystem.Controllers
             if (student == null)
                 return NotFound();
 
-            ViewBag.Courses = _context.Courses.ToList();
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
+            if (sessionCollegeId == null)
+                return Unauthorized();
+
+            var collegeName = _context.Colleges
+                .Where(c => c.Id == sessionCollegeId.Value)
+                .Select(c => c.Name)
+                .FirstOrDefault();
+
+            ViewBag.CollegeName = collegeName; 
+            
+            ViewBag.Courses = _context.Courses
+                .Where(c => c.CollegeId == sessionCollegeId.Value)
+                .ToList();
 
             ViewBag.Colleges = _context.Colleges
                 .Where(c => c.IsActive || c.Id == student.CollegeId)
                 .ToList();
 
-            return View(student);
+            var vm = new StudentProfileViewModel
+            {
+                Name = student.Name,
+                CourseId = student.CourseId,
+                RollNumber = student.RollNumber
+            };
+
+            return View(vm);
         }
 
         [HttpPost]
-        public IActionResult EditProfile(Student model)
+        public IActionResult EditProfile(StudentProfileViewModel model)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
                 return RedirectToAction("Login", "Account");
 
             var student = _context.Students
@@ -90,39 +111,54 @@ namespace OnlineExamSystem.Controllers
             if (student == null)
                 return NotFound();
 
-            // Duplicate roll number check
+            // 🔐 Validate Course belongs to college
+            bool validCourse = _context.Courses.Any(c =>
+                c.Id == model.CourseId &&
+                c.CollegeId == sessionCollegeId.Value);
+
+            if (!validCourse)
+            {
+                ModelState.AddModelError("CourseId", "Invalid course selection.");
+            }
+
+            // 🔐 Validate Roll uniqueness
             bool rollExists = _context.Students.Any(s =>
                 s.Id != student.Id &&
-                s.CollegeId == model.CollegeId &&
-                s.RollNumber == model.RollNumber
-            );
+                s.CollegeId == sessionCollegeId.Value &&
+                s.RollNumber == model.RollNumber);
 
             if (rollExists)
             {
                 ModelState.AddModelError(
                     "RollNumber",
-                    "This roll number already exists for the selected college."
-                );
+                    "This roll number already exists in your college.");
+            }
 
-                ViewBag.Courses = _context.Courses.ToList();
-
-
-                ViewBag.Colleges = _context.Colleges
-                    .Where(c => c.IsActive || c.Id == model.CollegeId)
+            if (!ModelState.IsValid)
+            {
+                // Reload courses
+                ViewBag.Courses = _context.Courses
+                    .Where(c => c.CollegeId == sessionCollegeId.Value)
                     .ToList();
+
+                // Reload college name
+                ViewBag.CollegeName = _context.Colleges
+                    .Where(c => c.Id == sessionCollegeId.Value)
+                    .Select(c => c.Name)
+                    .FirstOrDefault();
 
                 return View(model);
             }
 
+            // Save safely
             student.Name = model.Name;
             student.CourseId = model.CourseId;
-            student.CollegeId = model.CollegeId;
             student.RollNumber = model.RollNumber;
+            student.CollegeId = sessionCollegeId.Value;
 
             student.IsProfileCompleted =
                 !string.IsNullOrWhiteSpace(student.Name) &&
                 student.CourseId.HasValue &&
-                student.CollegeId.HasValue &&
                 !string.IsNullOrWhiteSpace(student.RollNumber);
 
             _context.SaveChanges();
@@ -146,7 +182,6 @@ namespace OnlineExamSystem.Controllers
             if (student == null)
                 return NotFound();
 
-            // Duplicate roll check (same college)
             bool rollExists = _context.Students.Any(s =>
                 s.Id != student.Id &&
                 s.CollegeId == model.CollegeId &&
@@ -162,7 +197,6 @@ namespace OnlineExamSystem.Controllers
 
                 ViewBag.Courses = _context.Courses.ToList();
 
-
                 ViewBag.Colleges = _context.Colleges
                     .Where(c => c.IsActive || c.Id == model.CollegeId)
                     .ToList();
@@ -171,17 +205,15 @@ namespace OnlineExamSystem.Controllers
                 return View(model);
             }
 
-            // Save
             student.Name = model.Name;
             student.CourseId = model.CourseId;
             student.CollegeId = model.CollegeId;
             student.RollNumber = model.RollNumber;
 
-            // Profile completion
             student.IsProfileCompleted =
                 !string.IsNullOrWhiteSpace(student.Name) &&
                 student.CourseId.HasValue &&
-                student.CollegeId.HasValue &&
+                student.CollegeId > 0 &&
                 !string.IsNullOrWhiteSpace(student.RollNumber);
 
             _context.SaveChanges();

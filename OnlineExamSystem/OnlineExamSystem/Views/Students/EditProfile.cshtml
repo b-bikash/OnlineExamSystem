@@ -1,4 +1,4 @@
-﻿@model OnlineExamSystem.Models.Student
+﻿@model OnlineExamSystem.Models.ViewModels.StudentProfileViewModel
 
 @{
     ViewData["Title"] = "Edit Profile";
@@ -6,6 +6,7 @@
 
 <h2>Edit Profile</h2>
 
+<div asp-validation-summary="All" class="text-danger"></div>
 <form asp-action="EditProfile" method="post">
 
     <div class="mb-3">
@@ -27,20 +28,9 @@
 
     <div class="mb-3">
         <label class="form-label">College</label>
-        <select asp-for="CollegeId" class="form-select">
-            <option value="">-- Select College --</option>
-
-            @foreach (var college in ViewBag.Colleges)
-            {
-                var isInactiveSelected =
-                Model.CollegeId == college.Id && !college.IsActive;
-
-                <option value="@college.Id"
-                        disabled="@(college.IsActive ? false : !isInactiveSelected)">
-                    @college.Name @(college.IsActive ? "" : "(Inactive)")
-                </option>
-            }
-        </select>
+        <input type="text" class="form-control"
+               value="@ViewBag.CollegeName"
+               readonly />
     </div>
 
     <div class="mb-3">

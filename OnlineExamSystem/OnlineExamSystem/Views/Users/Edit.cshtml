@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Edit User";
     var fullName = ViewBag.FullName as string;
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
 }
 
 <h2 class="mb-4">Edit User</h2>
@@ -21,17 +22,39 @@
 
             <input type="hidden" name="id" value="@Model.Id" />
 
-            <!-- ROLE FIRST -->
+            <!-- ROLE -->
             <div class="mb-3">
                 <label class="form-label">Role</label>
                 <select name="Role" id="roleSelect" class="form-select" required>
                     <option value="Admin" selected="@(Model.Role == "Admin")">Admin</option>
+                    <option value="TeacherAdmin" selected="@(Model.Role == "TeacherAdmin")">Teacher Admin</option>
                     <option value="Teacher" selected="@(Model.Role == "Teacher")">Teacher</option>
                     <option value="Student" selected="@(Model.Role == "Student")">Student</option>
                 </select>
             </div>
 
-            <!-- FULL NAME (STUDENT / TEACHER ONLY) -->
+            <!-- COLLEGE -->
+            <div class="mb-3">
+                <label class="form-label">College</label>
+                <select name="CollegeId" id="collegeSelect" class="form-select">
+                    <option value="">-- Select College --</option>
+                    @if (colleges != null)
+                    {
+                        foreach (var college in colleges)
+                        {
+                            <option value="@college.Id"
+                                    selected="@(Model.CollegeId == college.Id)">
+                                @college.Name
+                            </option>
+                        }
+                    }
+                </select>
+                <span class="text-danger" id="collegeValidation" style="display:none;">
+                    College is required for this role.
+                </span>
+            </div>
+
+            <!-- FULL NAME -->
             <div class="mb-3" id="fullNameWrapper">
                 <label class="form-label">Full Name</label>
                 <input name="FullName"
@@ -79,19 +102,48 @@
         const roleSelect = document.getElementById("roleSelect");
         const fullNameWrapper = document.getElementById("fullNameWrapper");
         const fullNameInput = document.getElementById("fullNameInput");
+        const collegeSelect = document.getElementById("collegeSelect");
+        const collegeValidation = document.getElementById("collegeValidation");
 
-        function toggleFullName() {
-            if (roleSelect.value === "Admin") {
+        function toggleFields() {
+
+            const role = roleSelect.value;
+
+            // FULL NAME
+            if (role === "Admin") {
                 fullNameWrapper.style.display = "none";
-                fullNameInput.value = "";
                 fullNameInput.removeAttribute("required");
             } else {
                 fullNameWrapper.style.display = "block";
                 fullNameInput.setAttribute("required", "required");
             }
+
+            // COLLEGE
+            if (role === "Admin") {
+                collegeSelect.value = "";
+                collegeSelect.setAttribute("disabled", "disabled");
+                collegeSelect.removeAttribute("required");
+                collegeValidation.style.display = "none";
+            } else {
+                collegeSelect.removeAttribute("disabled");
+                collegeSelect.setAttribute("required", "required");
+            }
         }
 
-        roleSelect.addEventListener("change", toggleFullName);
-        toggleFullName();
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const role = roleSelect.value;
+
+            if (role !== "Admin" && !collegeSelect.value) {
+                e.preventDefault();
+                collegeValidation.style.display = "block";
+            }
+        });
+
+        roleSelect.addEventListener("change", function () {
+            collegeValidation.style.display = "none";
+            toggleFields();
+        });
+
+        toggleFields();
     </script>
 }

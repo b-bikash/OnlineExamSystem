@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace OnlineExamSystem.Controllers
 {
+    [ServiceFilter(typeof(AdminAuthorizeFilter))]
     public class AdminTeachersController : BaseController
     {
         private readonly ApplicationDbContext _context;
@@ -15,27 +16,57 @@ namespace OnlineExamSystem.Controllers
         }
 
         // ---------------- INDEX ----------------
-        public IActionResult Index()
+        public IActionResult Index(int? collegeId)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "Admin")
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var teachers = _context.Teachers
+            var query = _context.Teachers
                 .Include(t => t.User)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)
+                .AsQueryable();
+
+            // 🔐 TeacherAdmin → Only own college
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                query = query.Where(t => t.CollegeId == sessionCollegeId.Value);
+            }
+            else if (role == "Admin")
+            {
+                // 🏫 Optional college filter
+                if (collegeId.HasValue)
+                {
+                    query = query.Where(t => t.CollegeId == collegeId.Value);
+                }
+
+                ViewBag.Colleges = _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToList();
+
+                ViewBag.SelectedCollegeId = collegeId;
+            }
+
+            var teachers = query
                 .AsNoTracking()
                 .ToList();
 
             return View(teachers);
         }
 
-        // ---------------- DETAILS (optional) ----------------
+        // ---------------- DETAILS ----------------
         public IActionResult Details(int id)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "Admin")
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
             var teacher = _context.Teachers
@@ -46,6 +77,10 @@ namespace OnlineExamSystem.Controllers
 
             if (teacher == null)
                 return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || teacher.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
 
             return View(teacher);
         }
@@ -54,7 +89,9 @@ namespace OnlineExamSystem.Controllers
         public IActionResult AssignSubjects(int id)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "Admin")
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
             var teacher = _context.Teachers
@@ -65,7 +102,19 @@ namespace OnlineExamSystem.Controllers
             if (teacher == null)
                 return NotFound();
 
-            var subjects = _context.Subjects.ToList();
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || teacher.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
+
+            var subjectsQuery = _context.Subjects.AsQueryable();
+
+            if (role == "TeacherAdmin")
+            {
+                subjectsQuery = subjectsQuery
+                    .Where(s => s.CollegeId == sessionCollegeId.Value);
+            }
+
+            var subjects = subjectsQuery.ToList();
 
             var assignedSubjectIds = teacher.TeacherSubjects
                 .Select(ts => ts.SubjectId)
@@ -84,20 +133,38 @@ namespace OnlineExamSystem.Controllers
         public IActionResult AssignSubjects(int id, int[] subjectIds)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "Admin")
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            // Remove existing mappings
+            var teacher = _context.Teachers
+                .FirstOrDefault(t => t.Id == id);
+
+            if (teacher == null)
+                return NotFound();
+
+            if (role == "TeacherAdmin" &&
+                (sessionCollegeId == null || teacher.CollegeId != sessionCollegeId.Value))
+                return Unauthorized();
+
             var existingMappings = _context.TeacherSubjects
                 .Where(ts => ts.TeacherId == id);
 
             _context.TeacherSubjects.RemoveRange(existingMappings);
 
-            // Add new mappings
             if (subjectIds != null && subjectIds.Length > 0)
             {
                 foreach (var subjectId in subjectIds)
                 {
+                    // 🔐 Ensure subject belongs to same college
+                    var validSubject = _context.Subjects.Any(s =>
+                        s.Id == subjectId &&
+                        (role == "Admin" || s.CollegeId == sessionCollegeId));
+
+                    if (!validSubject)
+                        continue;
+
                     _context.TeacherSubjects.Add(new TeacherSubject
                     {
                         TeacherId = id,

@@ -22,6 +22,8 @@ namespace OnlineExamSystem.Models
         [MaxLength(20)]
         public string Role { get; set; } // Student, Teacher, Admin
 
+        // Null for Global Admin
+        public int? CollegeId { get; set; }
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
