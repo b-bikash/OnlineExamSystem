@@ -73,6 +73,7 @@ namespace OnlineExamSystem.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     CollegeId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -522,9 +523,10 @@ namespace OnlineExamSystem.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Subjects_CollegeId",
+                name: "IX_Subjects_CollegeId_Code",
                 table: "Subjects",
-                column: "CollegeId");
+                columns: new[] { "CollegeId", "Code" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Teachers_CollegeId",

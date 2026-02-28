@@ -12,7 +12,7 @@ using OnlineExamSystem.Models;
 namespace OnlineExamSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260226063636_InitialCreate")]
+    [Migration("20260228103245_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -380,6 +380,11 @@ namespace OnlineExamSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<int>("CollegeId")
                         .HasColumnType("int");
 
@@ -390,7 +395,8 @@ namespace OnlineExamSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CollegeId");
+                    b.HasIndex("CollegeId", "Code")
+                        .IsUnique();
 
                     b.ToTable("Subjects");
                 });
@@ -735,9 +741,11 @@ namespace OnlineExamSystem.Migrations
 
             modelBuilder.Entity("OnlineExamSystem.Models.User", b =>
                 {
-                    b.HasOne("OnlineExamSystem.Models.College", null)
+                    b.HasOne("OnlineExamSystem.Models.College", "College")
                         .WithMany("Users")
                         .HasForeignKey("CollegeId");
+
+                    b.Navigation("College");
                 });
 
             modelBuilder.Entity("OnlineExamSystem.Models.College", b =>

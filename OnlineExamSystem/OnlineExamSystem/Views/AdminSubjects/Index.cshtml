@@ -30,6 +30,17 @@
 
         <form method="get" class="row g-3 align-items-end">
 
+            <!-- 🔎 Search -->
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Search subjects..." />
+            </div>
+
+            <!-- 🏫 College Filter (Admin Only) -->
             @if (role == "Admin")
             {
                 <div class="col-md-4">
@@ -50,47 +61,20 @@
                 </div>
             }
 
-            <form method="get" class="row g-3 align-items-center mb-3">
+            <!-- 🔘 Buttons -->
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary">
+                    Apply Filter
+                </button>
 
-                <div class="col-md-4">
-                    <input type="text"
-                           name="search"
-                           value="@ViewBag.Search"
-                           class="form-control"
-                           placeholder="Search subjects..." />
-                </div>
+                <a asp-action="Index" class="btn btn-secondary">
+                    Reset
+                </a>
 
-                @if (Context.Session.GetString("Role") == "Admin")
-                {
-                    <div class="col-md-3">
-                        <select name="collegeId" class="form-select">
-                            <option value="">All Colleges</option>
-                            @foreach (var college in ViewBag.Colleges as List<OnlineExamSystem.Models.College>)
-                            {
-                                <option value="@college.Id"
-                                        selected="@(ViewBag.SelectedCollegeId != null && (int)ViewBag.SelectedCollegeId == college.Id)">
-                                    @college.Name
-                                </option>
-                            }
-                        </select>
-                    </div>
-                }
-
-                <div class="col-md-auto">
-                    <button type="submit" class="btn btn-primary">
-                        Apply Filter
-                    </button>
-
-                    <a asp-action="Index" class="btn btn-secondary">
-                        Reset
-                    </a>
-
-                    <a asp-action="Create" class="btn btn-success ms-auto">
-                        + Add Subject
-                    </a>
-                </div>
-
-            </form>
+                <a asp-action="Create" class="btn btn-success ms-auto">
+                    + Add Subject
+                </a>
+            </div>
 
         </form>
 
@@ -105,6 +89,7 @@
             <table class="table table-bordered table-striped align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th>Code</th>
                         <th>Name</th>
 
                         @if (role == "Admin")
@@ -119,6 +104,12 @@
                     @foreach (var subject in Model)
                     {
                         <tr>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    @subject.Code
+                                </span>
+                            </td>
+
                             <td>@subject.Name</td>
 
                             @if (role == "Admin")

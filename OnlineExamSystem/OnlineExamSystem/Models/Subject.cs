@@ -11,7 +11,11 @@ namespace OnlineExamSystem.Models
     [MaxLength(100)]
     public string Name { get; set; }
 
-    public int CollegeId { get; set; }
+        [Required]
+        [MaxLength(30)]
+        public string Code { get; set; }
+
+        public int CollegeId { get; set; }
     public College? College { get; set; }
 
     public ICollection<TeacherSubject>? TeacherSubjects { get; set; }

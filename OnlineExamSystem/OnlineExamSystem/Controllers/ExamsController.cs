@@ -273,7 +273,7 @@ namespace OnlineExamSystem.Controllers
                 .Select(s => new SelectListItem
                 {
                     Value = s.Id.ToString(),
-                    Text = s.Name
+                    Text = s.Name + " (" + s.Code + ")"
                 })
                 .ToList();
 
@@ -310,25 +310,7 @@ namespace OnlineExamSystem.Controllers
             ModelState.Remove("Subject");
             ModelState.Remove("Questions");
             ModelState.Remove("ExamAttempts");
-
-            /*if (teacher.CollegeId == null)
-            {
-                ModelState.AddModelError("", "You must be associated with a college to create an exam.");
-                // Repopulate ViewBag
-                ViewBag.Subjects = teacher.TeacherSubjects
-                    .Where(ts => ts.Subject != null)
-                    .Select(ts => ts.Subject)
-                    .OrderBy(s => s.Name)
-                    .Select(s => new SelectListItem
-                    {
-                        Value = s.Id.ToString(),
-                        Text = s.Name
-                    })
-                    .ToList();
-                return View(exam);
-            }*/
-
-
+                       
             if (!ModelState.IsValid)
             {
                 ViewBag.Subjects = teacher.TeacherSubjects
@@ -338,7 +320,7 @@ namespace OnlineExamSystem.Controllers
                     .Select(s => new SelectListItem
                     {
                         Value = s.Id.ToString(),
-                        Text = s.Name
+                        Text = s.Name + " (" + s.Code + ")"
                     })
                     .ToList();
 

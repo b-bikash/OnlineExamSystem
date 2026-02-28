@@ -5,6 +5,24 @@
 <form method="post">
     @Html.AntiForgeryToken()
 
+    <!-- 🔴 Validation Summary -->
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="CollegeId" />
+
+    <!-- 🏷 Subject Code -->
+    <div class="mb-3">
+        <label class="form-label">Subject Code</label>
+        <input asp-for="Code"
+               class="form-control"
+               placeholder="e.g. CS101, MTH201" />
+        <span asp-validation-for="Code"
+              class="text-danger"></span>
+    </div>
+
+    <!-- 📘 Subject Name -->
     <div class="mb-3">
         <label class="form-label">Subject Name</label>
         <input asp-for="Name"
@@ -23,3 +41,7 @@
         Cancel
     </a>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

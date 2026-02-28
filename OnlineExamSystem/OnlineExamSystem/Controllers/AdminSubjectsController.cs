@@ -89,7 +89,7 @@ namespace OnlineExamSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(Subject model)
+        public async Task<IActionResult> Create(Subject model)
         {
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
@@ -100,6 +100,11 @@ namespace OnlineExamSystem.Controllers
             if (string.IsNullOrWhiteSpace(model.Name))
             {
                 ModelState.AddModelError("Name", "Subject name is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Code))
+            {
+                ModelState.AddModelError("Code", "Subject code is required.");
             }
 
             // 🔐 Multi-tenant enforcement
@@ -130,13 +135,14 @@ namespace OnlineExamSystem.Controllers
                 return View(model);
             }
 
-            bool exists = _context.Subjects.Any(s =>
-                s.Name.ToLower() == model.Name.ToLower() &&
-                s.CollegeId == model.CollegeId);
+            // 🔎 Duplicate Subject Code check (College-wise, case-insensitive)
+            bool codeExists = await _context.Subjects.AnyAsync(s =>
+                s.CollegeId == model.CollegeId &&
+                s.Code.ToLower() == model.Code.ToLower());
 
-            if (exists)
+            if (codeExists)
             {
-                ModelState.AddModelError("Name", "Subject already exists in this college.");
+                ModelState.AddModelError("Code", "Subject code already exists in this college.");
 
                 if (role == "Admin")
                 {
@@ -149,7 +155,7 @@ namespace OnlineExamSystem.Controllers
             }
 
             _context.Subjects.Add(model);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = "Subject added successfully.";
             return RedirectToAction(nameof(Index));
@@ -179,7 +185,7 @@ namespace OnlineExamSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Subject model)
+        public async Task<IActionResult> Edit(int id, Subject model)
         {
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
@@ -187,7 +193,7 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
+            var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == id);
             if (subject == null)
                 return NotFound();
 
@@ -199,22 +205,32 @@ namespace OnlineExamSystem.Controllers
                 model.CollegeId = sessionCollegeId.Value;
             }
 
+            if (string.IsNullOrWhiteSpace(model.Name))
+                ModelState.AddModelError("Name", "Subject name is required.");
+
+            if (string.IsNullOrWhiteSpace(model.Code))
+                ModelState.AddModelError("Code", "Subject code is required.");
+
             if (!ModelState.IsValid)
                 return View(model);
 
-            bool duplicate = _context.Subjects.Any(s =>
+            // 🔎 Duplicate Subject Code check (College-wise, case-insensitive)
+            bool codeDuplicate = await _context.Subjects.AnyAsync(s =>
                 s.Id != id &&
-                s.Name.ToLower() == model.Name.ToLower() &&
-                s.CollegeId == model.CollegeId);
+                s.CollegeId == subject.CollegeId &&
+                s.Code.ToLower() == model.Code.ToLower());
 
-            if (duplicate)
+            if (codeDuplicate)
             {
-                ModelState.AddModelError("Name", "Subject already exists in this college.");
-                return View(subject);
+                ModelState.AddModelError("Code", "Subject code already exists in this college.");
+                return View(model);
             }
 
+            // Update fields
             subject.Name = model.Name;
-            _context.SaveChanges();
+            subject.Code = model.Code;
+
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = "Subject updated successfully.";
             return RedirectToAction(nameof(Index));
@@ -225,7 +241,7 @@ namespace OnlineExamSystem.Controllers
         // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
@@ -233,10 +249,10 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subject = _context.Subjects
+            var subject = await _context.Subjects
                 .Include(s => s.CourseSubjects)
                 .Include(s => s.TeacherSubjects)
-                .FirstOrDefault(s => s.Id == id);
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (subject == null)
                 return NotFound();
@@ -246,7 +262,7 @@ namespace OnlineExamSystem.Controllers
                 return Unauthorized();
 
             // 🔐 Block if exams exist
-            bool hasExams = _context.Exams.Any(e => e.SubjectId == id);
+            bool hasExams = await _context.Exams.AnyAsync(e => e.SubjectId == id);
             if (hasExams)
             {
                 TempData["Error"] = "Cannot delete subject because exams already exist for it.";
@@ -254,19 +270,19 @@ namespace OnlineExamSystem.Controllers
             }
 
             // Remove Teacher-Subject mappings
-            if (subject.TeacherSubjects.Any())
+            if (subject.TeacherSubjects != null && subject.TeacherSubjects.Any())
             {
                 _context.TeacherSubjects.RemoveRange(subject.TeacherSubjects);
             }
 
             // Remove Course-Subject mappings
-            if (subject.CourseSubjects.Any())
+            if (subject.CourseSubjects != null && subject.CourseSubjects.Any())
             {
                 _context.CourseSubjects.RemoveRange(subject.CourseSubjects);
             }
 
             _context.Subjects.Remove(subject);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = "Subject deleted successfully.";
             return RedirectToAction(nameof(Index));

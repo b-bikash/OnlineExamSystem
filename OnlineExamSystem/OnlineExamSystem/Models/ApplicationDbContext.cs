@@ -181,6 +181,10 @@ namespace OnlineExamSystem.Models
                 .WithMany()
                 .HasForeignKey(c => c.CollegeId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Subject>()
+                .HasIndex(s => new { s.CollegeId, s.Code })
+                .IsUnique();
         }
     }
 }
