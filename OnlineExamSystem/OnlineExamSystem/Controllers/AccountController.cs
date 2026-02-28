@@ -126,16 +126,17 @@ public IActionResult Register(RegisterViewModel model)
 
     try
     {
-        var user = new User
-        {
-            Username = model.Username,
-            Email = model.Email,
-            PasswordHash = PasswordHelper.HashPassword(model.Password),
-            Role = model.Role,
-            IsActive = true
-        };
+                var user = new User
+                {
+                    Username = model.Username,
+                    Email = model.Email,
+                    PasswordHash = PasswordHelper.HashPassword(model.Password),
+                    Role = model.Role,
+                    CollegeId = model.Role == "Admin" ? null : model.CollegeId,
+                    IsActive = true
+                };
 
-        _context.Users.Add(user);
+                _context.Users.Add(user);
         _context.SaveChanges(); // generates user.Id
 
         if (user.Role == "Student")

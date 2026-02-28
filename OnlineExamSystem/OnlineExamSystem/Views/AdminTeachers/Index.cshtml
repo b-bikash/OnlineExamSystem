@@ -14,6 +14,17 @@
 
         <form method="get" class="row g-3 align-items-end">
 
+            <!-- 🔍 Search -->
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Search by name or email..." />
+            </div>
+
+            <!-- 🏫 College Filter (Admin only) -->
             @if (role == "Admin")
             {
                 <div class="col-md-4">
@@ -34,7 +45,8 @@
                 </div>
             }
 
-            <div class="col-md-4 d-flex gap-2">
+            <!-- Buttons -->
+            <div class="col-md-auto">
                 <button type="submit" class="btn btn-primary">
                     Apply Filter
                 </button>
@@ -102,11 +114,12 @@
                             </td>
 
                             <td>
-                                <a asp-action="AssignSubjects"
-                                   asp-route-id="@teacher.Id"
-                                   class="btn btn-sm btn-warning">
-                                    Assign Subjects
-                                </a>
+                                @if (teacher.User != null && teacher.User.Role == "Teacher")
+                                {
+                                    <a asp-action="AssignSubjects" asp-route-id="@teacher.Id" class="btn btn-sm btn-primary">
+                                        Assign Subjects
+                                    </a>
+                                }
                             </td>
                         </tr>
                     }

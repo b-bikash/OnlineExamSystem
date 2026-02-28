@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using OnlineExamSystem.Models.ViewModels;
+using OnlineExamSystem.ViewModels;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -110,9 +111,80 @@ namespace OnlineExamSystem.Controllers
                 if (collegeId == null)
                     return Unauthorized();
 
-                // Same dashboard view as Admin
+                var now = DateTime.UtcNow;
+
+                var model = new TeacherAdminDashboardViewModel
+                {
+                    TotalStudents = _context.Students
+                        .AsNoTracking()
+                        .Count(s => s.CollegeId == collegeId),
+
+                    TotalTeachers = _context.Teachers
+                        .AsNoTracking()
+                        .Count(t => t.CollegeId == collegeId),
+
+                    TotalCourses = _context.Courses
+                        .AsNoTracking()
+                        .Count(c => c.CollegeId == collegeId),
+
+                    TotalSubjects = _context.Subjects
+                        .AsNoTracking()
+                        .Count(s => s.CollegeId == collegeId),
+
+                    TotalExams = _context.Exams
+                        .AsNoTracking()
+                        .Count(e => e.CollegeId == collegeId),
+
+                    LiveExamsCount = _context.Exams
+                        .AsNoTracking()
+                        .Count(e =>
+                            e.CollegeId == collegeId &&
+                            e.StartDateTime <= now &&
+                            e.EndDateTime >= now),
+
+                    UpcomingExamsCount = _context.Exams
+                        .AsNoTracking()
+                        .Count(e =>
+                            e.CollegeId == collegeId &&
+                            e.StartDateTime > now),
+
+                    CompletedExamsCount = _context.Exams
+                        .AsNoTracking()
+                        .Count(e =>
+                            e.CollegeId == collegeId &&
+                            e.EndDateTime < now),
+
+                    TotalExamAttempts = _context.ExamAttempts
+                        .AsNoTracking()
+                        .Count(a => a.CollegeId == collegeId),
+
+                    AverageScore = _context.ExamAttempts
+                        .AsNoTracking()
+                        .Where(a => a.CollegeId == collegeId)
+                        .Select(a => (double?)a.Score)
+                        .Average()
+                };
+
+                var examStats = _context.Exams
+                .AsNoTracking()
+                .Where(e => e.CollegeId == collegeId)
+                .GroupBy(e => 1)
+                .Select(g => new
+                {
+                    Total = g.Count(),
+                    Live = g.Count(e => e.StartDateTime <= now && e.EndDateTime >= now),
+                    Upcoming = g.Count(e => e.StartDateTime > now),
+                    Completed = g.Count(e => e.EndDateTime < now)
+                })
+                .FirstOrDefault();
+
+                model.TotalExams = examStats?.Total ?? 0;
+                model.LiveExamsCount = examStats?.Live ?? 0;
+                model.UpcomingExamsCount = examStats?.Upcoming ?? 0;
+                model.CompletedExamsCount = examStats?.Completed ?? 0; 
+                
                 ViewBag.IsTeacherAdmin = true;
-                return View();
+                return View(model);
             }
 
             return Unauthorized();

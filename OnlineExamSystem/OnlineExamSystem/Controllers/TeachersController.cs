@@ -64,6 +64,7 @@ namespace OnlineExamSystem.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult UpdateProfile(string name, string username, string email, int collegeId)
         {
+            //Console.WriteLine("Received CollegeId: " + collegeId); 
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return RedirectToAction("Login", "Account");
@@ -121,12 +122,31 @@ namespace OnlineExamSystem.Controllers
             }
 
             // ✅ SAVE
+
+            bool collegeChanged = teacher.CollegeId != collegeId; 
+            
             teacher.Name = name;
             teacher.CollegeId = collegeId;
+
+            // 🔥 VERY IMPORTANT — SYNC USER TABLE
+            user.CollegeId = collegeId;
+
             user.Username = username;
             user.Email = email;
 
+            // 🔥 If college changed → remove old subject assignments
+            if (collegeChanged)
+            {
+                var teacherSubjects = _context.TeacherSubjects
+                    .Where(ts => ts.TeacherId == teacher.Id)
+                    .ToList();
+
+                _context.TeacherSubjects.RemoveRange(teacherSubjects);
+            }
             _context.SaveChanges();
+
+            // 🔥 ALSO UPDATE SESSION
+            HttpContext.Session.SetInt32("CollegeId", collegeId);
 
             TempData["SuccessMessage"] = "Profile updated successfully.";
 

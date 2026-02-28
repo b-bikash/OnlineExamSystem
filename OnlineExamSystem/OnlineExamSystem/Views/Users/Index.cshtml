@@ -33,10 +33,10 @@
             <div class="col-md-4">
                 <label class="form-label">Search by Email</label>
                 <input type="text"
-                       name="searchEmail"
-                       value="@ViewBag.SearchEmail"
+                       name="search"
+                       value="@ViewBag.Search"
                        class="form-control"
-                       placeholder="Enter email" />
+                       placeholder="Search by email" />
             </div>
 
             <div class="col-md-4">
@@ -53,6 +53,17 @@
                             </option>
                         }
                     }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="Admin" selected="@(ViewBag.SelectedRole == "Admin")">Admin</option>
+                    <option value="TeacherAdmin" selected="@(ViewBag.SelectedRole == "TeacherAdmin")">TeacherAdmin</option>
+                    <option value="Teacher" selected="@(ViewBag.SelectedRole == "Teacher")">Teacher</option>
+                    <option value="Student" selected="@(ViewBag.SelectedRole == "Student")">Student</option>
                 </select>
             </div>
 
@@ -111,12 +122,16 @@
                                     }
                                     else
                                     {
-                                        var collegeName = colleges?
-                                        .FirstOrDefault(c => c.Id == user.CollegeId)?.Name;
-
-                                        <span class="badge bg-info text-dark">
-                                            @collegeName
-                                        </span>
+                                        @if (user.CollegeId == null)
+                                        {
+                                            <span class="badge bg-dark">Global</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">
+                                                @user.College?.Name
+                                            </span>
+                                        }
                                     }
                                 }
                             </td>

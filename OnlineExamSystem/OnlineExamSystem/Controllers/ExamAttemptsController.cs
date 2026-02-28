@@ -363,8 +363,9 @@ namespace OnlineExamSystem.Controllers
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+            var role = HttpContext.Session.GetString("Role");
 
-            if (userId == null)
+            if (userId == null || role == null)
                 return RedirectToAction("Login", "Account");
 
             var user = _context.Users
@@ -374,79 +375,91 @@ namespace OnlineExamSystem.Controllers
             if (user == null || !user.IsActive)
                 return Unauthorized();
 
-            Student student = null;
-            Teacher teacher = null;
-
-            if (user.Role == "Student")
-            {
-                if (sessionCollegeId == null)
-                    return Unauthorized();
-
-                student = _context.Students
-                    .AsNoTracking()
-                    .FirstOrDefault(s =>
-                        s.UserId == user.Id &&
-                        s.CollegeId == sessionCollegeId.Value);
-
-                if (student == null)
-                    return Unauthorized();
-            }
-
-            if (user.Role == "Teacher")
-            {
-                if (sessionCollegeId == null)
-                    return Unauthorized();
-
-                teacher = _context.Teachers
-                    .AsNoTracking()
-                    .FirstOrDefault(t =>
-                        t.UserId == user.Id &&
-                        t.CollegeId == sessionCollegeId.Value);
-
-                if (teacher == null)
-                    return Unauthorized();
-            }
-
             var attempt = _context.ExamAttempts
                 .Include(a => a.Exam)
                     .ThenInclude(e => e.Questions)
                         .ThenInclude(q => q.Options)
                 .Include(a => a.StudentAnswers)
                 .AsNoTracking()
-                .FirstOrDefault(a =>
-                    a.Id == attemptId &&
-                    a.CollegeId == sessionCollegeId
-                );
+                .FirstOrDefault(a => a.Id == attemptId);
 
             if (attempt == null)
                 return Unauthorized();
 
-            bool isStudentOwner = false;
-            bool isTeacherCreator = false;
-
-            if (student != null)
+            // ===============================
+            // STUDENT
+            // ===============================
+            if (role == "Student")
             {
-                isStudentOwner = attempt.StudentId == student.Id;
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                var student = _context.Students
+                    .AsNoTracking()
+                    .FirstOrDefault(s =>
+                        s.UserId == user.Id &&
+                        s.CollegeId == sessionCollegeId.Value);
+
+                if (student == null || attempt.StudentId != student.Id)
+                    return Forbid();
+
+                // Student cannot view before exam ends
+                if (attempt.Exam.EndDateTime.HasValue &&
+                    DateTime.Now < attempt.Exam.EndDateTime.Value)
+                {
+                    TempData["ErrorMessage"] = "Results will be available after the exam ends.";
+                    return RedirectToAction("Index", "Exams");
+                }
             }
 
-            if (teacher != null)
+            // ===============================
+            // TEACHER
+            // ===============================
+            else if (role == "Teacher")
             {
-                isTeacherCreator = attempt.Exam.CreatedByTeacherId == teacher.Id;
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                var teacher = _context.Teachers
+                    .AsNoTracking()
+                    .FirstOrDefault(t =>
+                        t.UserId == user.Id &&
+                        t.CollegeId == sessionCollegeId.Value);
+
+                if (teacher == null ||
+                    attempt.Exam.CreatedByTeacherId != teacher.Id)
+                    return Forbid();
             }
 
-            if (!isStudentOwner && !isTeacherCreator)
+            // ===============================
+            // TEACHER ADMIN
+            // ===============================
+            else if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                // Must belong to same college
+                if (attempt.CollegeId != sessionCollegeId.Value)
+                    return Forbid();
+            }
+
+            // ===============================
+            // ADMIN
+            // ===============================
+            else if (role == "Admin")
+            {
+                // Admin can see everything
+                // No restrictions
+            }
+
+            else
+            {
                 return Unauthorized();
+            }
 
             if (attempt.EndTime == null)
                 return RedirectToAction("Index", "Exams");
-
-            if (isStudentOwner &&
-                attempt.Exam.EndDateTime.HasValue &&
-                DateTime.Now < attempt.Exam.EndDateTime.Value)
-            {
-                TempData["ErrorMessage"] = "Results will be available after the exam ends.";
-                return RedirectToAction("Index", "Exams");
-            }
 
             return View(attempt);
         }

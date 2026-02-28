@@ -232,6 +232,8 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         // DELETE
         // -------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
             var role = HttpContext.Session.GetString("Role");
@@ -240,13 +242,29 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var course = _context.Courses.FirstOrDefault(c => c.Id == id);
+            IQueryable<Course> query = _context.Courses;
+
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                query = query.Where(c => c.CollegeId == sessionCollegeId.Value);
+            }
+
+            var course = query.FirstOrDefault(c => c.Id == id);
+
             if (course == null)
                 return NotFound();
 
-            if (role == "TeacherAdmin" &&
-                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
-                return Unauthorized();
+            // 🔐 Check dependent Students
+            bool hasStudents = _context.Students.Any(s => s.CourseId == id);
+
+            if (hasStudents)
+            {
+                TempData["Error"] = "Cannot delete this course because students are assigned to it.";
+                return RedirectToAction(nameof(Index));
+            }
 
             _context.Courses.Remove(course);
             _context.SaveChanges();
@@ -261,41 +279,42 @@ namespace OnlineExamSystem.Controllers
 
         public IActionResult Subjects(int id)
         {
+            var sessionUserId = HttpContext.Session.GetInt32("UserId");
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
 
-            if (role != "Admin" && role != "TeacherAdmin")
-                return RedirectToAction("Index", "Dashboard");
+            if (sessionUserId == null)
+                return RedirectToAction("Login", "Account");
 
             var course = _context.Courses
-                .AsNoTracking()
                 .FirstOrDefault(c => c.Id == id);
 
             if (course == null)
                 return NotFound();
 
-            if (role == "TeacherAdmin" &&
-                (sessionCollegeId == null || course.CollegeId != sessionCollegeId.Value))
+            // 🔐 SECURITY: TeacherAdmin cannot access other college course
+            if (role == "TeacherAdmin" && course.CollegeId != sessionCollegeId)
                 return Unauthorized();
 
-            var allSubjects = _context.Subjects
-                .Where(s => role == "Admin" || s.CollegeId == sessionCollegeId)
-                .OrderBy(s => s.Name)
+            // ✅ Only load subjects of that course's college
+            var subjects = _context.Subjects
+                .Where(s => s.CollegeId == course.CollegeId)
                 .ToList();
 
+            // ✅ Already assigned subject IDs
             var selectedSubjectIds = _context.CourseSubjects
-                .Where(cs => cs.CourseId == id)
+                .Where(cs => cs.CourseId == course.Id)
                 .Select(cs => cs.SubjectId)
                 .ToList();
 
-            var vm = new CourseSubjectsViewModel
+            var viewModel = new CourseSubjectsViewModel
             {
                 Course = course,
-                AllSubjects = allSubjects,
+                AllSubjects = subjects,
                 SelectedSubjectIds = selectedSubjectIds
             };
 
-            return View(vm);
+            return View(viewModel);
         }
 
         [HttpPost]

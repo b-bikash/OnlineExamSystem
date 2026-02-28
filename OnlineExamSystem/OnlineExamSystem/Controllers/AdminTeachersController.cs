@@ -16,7 +16,8 @@ namespace OnlineExamSystem.Controllers
         }
 
         // ---------------- INDEX ----------------
-        public IActionResult Index(int? collegeId)
+        // GET: AdminTeachers + SEARCH
+        public async Task<IActionResult> Index(string search, int? collegeId)
         {
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
@@ -24,10 +25,11 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var query = _context.Teachers
+            var teachersQuery = _context.Teachers
                 .Include(t => t.User)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)
+                .Include(t => t.College)
                 .AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college
@@ -36,14 +38,15 @@ namespace OnlineExamSystem.Controllers
                 if (sessionCollegeId == null)
                     return Unauthorized();
 
-                query = query.Where(t => t.CollegeId == sessionCollegeId.Value);
+                teachersQuery = teachersQuery
+                    .Where(t => t.CollegeId == sessionCollegeId.Value);
             }
             else if (role == "Admin")
             {
-                // 🏫 Optional college filter
                 if (collegeId.HasValue)
                 {
-                    query = query.Where(t => t.CollegeId == collegeId.Value);
+                    teachersQuery = teachersQuery
+                        .Where(t => t.CollegeId == collegeId.Value);
                 }
 
                 ViewBag.Colleges = _context.Colleges
@@ -53,11 +56,18 @@ namespace OnlineExamSystem.Controllers
                 ViewBag.SelectedCollegeId = collegeId;
             }
 
-            var teachers = query
-                .AsNoTracking()
-                .ToList();
+            // 🔎 Search by Name or Email
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                teachersQuery = teachersQuery.Where(t =>
+                    (t.Name != null && t.Name.Contains(search)) ||
+                    (t.User != null && t.User.Email.Contains(search))
+                );
+            }
 
-            return View(teachers);
+            ViewBag.Search = search;
+
+            return View(await teachersQuery.ToListAsync());
         }
 
         // ---------------- DETAILS ----------------
@@ -95,16 +105,21 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", "Dashboard");
 
             var teacher = _context.Teachers
-                .Include(t => t.User)
+                .Include(t => t.User)               // ✅ REQUIRED
                 .Include(t => t.TeacherSubjects)
                 .FirstOrDefault(t => t.Id == id);
 
             if (teacher == null)
                 return NotFound();
 
+            // 🔐 Multi-tenant enforcement
             if (role == "TeacherAdmin" &&
                 (sessionCollegeId == null || teacher.CollegeId != sessionCollegeId.Value))
                 return Unauthorized();
+
+            // 🔐 STRICT ROLE CHECK (Corrected)
+            if (teacher.User == null || teacher.User.Role != "Teacher")
+                return Forbid();
 
             var subjectsQuery = _context.Subjects.AsQueryable();
 
@@ -139,14 +154,20 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", "Dashboard");
 
             var teacher = _context.Teachers
+                .Include(t => t.User)   // ✅ REQUIRED
                 .FirstOrDefault(t => t.Id == id);
 
             if (teacher == null)
                 return NotFound();
 
+            // 🔐 Multi-tenant enforcement
             if (role == "TeacherAdmin" &&
                 (sessionCollegeId == null || teacher.CollegeId != sessionCollegeId.Value))
                 return Unauthorized();
+
+            // 🔐 STRICT ROLE CHECK (via User table)
+            if (teacher.User == null || teacher.User.Role != "Teacher")
+                return Forbid();
 
             var existingMappings = _context.TeacherSubjects
                 .Where(ts => ts.TeacherId == id);
@@ -157,7 +178,6 @@ namespace OnlineExamSystem.Controllers
             {
                 foreach (var subjectId in subjectIds)
                 {
-                    // 🔐 Ensure subject belongs to same college
                     var validSubject = _context.Subjects.Any(s =>
                         s.Id == subjectId &&
                         (role == "Admin" || s.CollegeId == sessionCollegeId));

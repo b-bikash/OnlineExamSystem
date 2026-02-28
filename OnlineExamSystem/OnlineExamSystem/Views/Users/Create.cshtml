@@ -1,4 +1,6 @@
-﻿@{
+﻿@model OnlineExamSystem.Models.User
+
+@{
     ViewData["Title"] = "Create User";
 }
 
@@ -14,12 +16,13 @@
             </div>
         }
 
-        <form method="post">
+        <form asp-controller="Users" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
 
             <!-- ROLE -->
             <div class="mb-3">
                 <label class="form-label">Role</label>
-                <select name="Role" id="roleSelect" class="form-select" required>
+                <select asp-for="Role" id="roleSelect" class="form-select" required>
                     <option value="">-- Select Role --</option>
                     <option value="Student">Student</option>
                     <option value="Teacher">Teacher</option>
@@ -29,15 +32,15 @@
             </div>
 
             <!-- COLLEGE -->
-            <div class="mb-3">
+            <div class="mb-3" id="collegeWrapper">
                 <label class="form-label">College</label>
-                <select name="CollegeId" id="collegeSelect" class="form-select">
+                <select asp-for="CollegeId"
+                        id="collegeSelect"
+                        class="form-select"
+                        asp-items="@(new SelectList(ViewBag.Colleges, "Id", "Name"))">
                     <option value="">-- Select College --</option>
-                    @foreach (var college in ViewBag.Colleges)
-                    {
-                        <option value="@college.Id">@college.Name</option>
-                    }
                 </select>
+
                 <span class="text-danger" id="collegeValidation" style="display:none;">
                     College is required for this role.
                 </span>
@@ -46,19 +49,24 @@
             <!-- FULL NAME -->
             <div class="mb-3" id="fullNameWrapper">
                 <label class="form-label">Full Name</label>
-                <input name="FullName" id="fullNameInput" class="form-control" />
+                <input name="FullName"
+                       id="fullNameInput"
+                       class="form-control" />
             </div>
 
+            <!-- USERNAME -->
             <div class="mb-3">
                 <label class="form-label">Username</label>
-                <input name="Username" class="form-control" required />
+                <input asp-for="Username" class="form-control" required />
             </div>
 
+            <!-- EMAIL -->
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input name="Email" type="email" class="form-control" required />
+                <input asp-for="Email" type="email" class="form-control" required />
             </div>
 
+            <!-- PASSWORD -->
             <div class="mb-3">
                 <label class="form-label">Password</label>
                 <input name="Password" type="password" class="form-control" required />
@@ -81,14 +89,14 @@
         const roleSelect = document.getElementById("roleSelect");
         const fullNameWrapper = document.getElementById("fullNameWrapper");
         const fullNameInput = document.getElementById("fullNameInput");
+        const collegeWrapper = document.getElementById("collegeWrapper");
         const collegeSelect = document.getElementById("collegeSelect");
         const collegeValidation = document.getElementById("collegeValidation");
 
         function toggleFields() {
-
             const role = roleSelect.value;
 
-            // FULL NAME LOGIC
+            // FULL NAME
             if (role === "Admin" || role === "") {
                 fullNameWrapper.style.display = "none";
                 fullNameInput.value = "";
@@ -98,24 +106,18 @@
                 fullNameInput.setAttribute("required", "required");
             }
 
-            // COLLEGE LOGIC
-            if (role === "Admin") {
+            // COLLEGE
+            if (role === "Admin" || role === "") {
                 collegeSelect.value = "";
-                collegeSelect.setAttribute("disabled", "disabled");
                 collegeSelect.removeAttribute("required");
-                collegeValidation.style.display = "none";
-            } else if (role === "") {
-                collegeSelect.value = "";
-                collegeSelect.setAttribute("disabled", "disabled");
-                collegeSelect.removeAttribute("required");
+                collegeWrapper.style.display = "none";
                 collegeValidation.style.display = "none";
             } else {
-                collegeSelect.removeAttribute("disabled");
+                collegeWrapper.style.display = "block";
                 collegeSelect.setAttribute("required", "required");
             }
         }
 
-        // CLIENT VALIDATION BEFORE SUBMIT
         document.querySelector("form").addEventListener("submit", function (e) {
             const role = roleSelect.value;
 
@@ -132,7 +134,6 @@
             toggleFields();
         });
 
-        // INITIAL LOAD
         toggleFields();
     </script>
 }

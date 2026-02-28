@@ -20,10 +20,13 @@ namespace OnlineExamSystem.Models
 
         [Required]
         [MaxLength(20)]
-        public string Role { get; set; } // Student, Teacher, Admin
+        public string Role { get; set; }
 
-        // Null for Global Admin
         public int? CollegeId { get; set; }
+
+        // ✅ Navigation Property
+        public College College { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -15,9 +15,10 @@ namespace OnlineExamSystem.Controllers
         }
 
         // =========================
-        // LIST
+        // INDEX
         // =========================
-        public IActionResult Index(int? collegeId)
+        // GET: AdminSubjects + SEARCH
+        public async Task<IActionResult> Index(string search, int? collegeId)
         {
             var role = HttpContext.Session.GetString("Role");
             var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
@@ -25,7 +26,9 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var query = _context.Subjects.AsNoTracking();
+            var subjectsQuery = _context.Subjects
+                .Include(s => s.College)
+                .AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college
             if (role == "TeacherAdmin")
@@ -33,14 +36,16 @@ namespace OnlineExamSystem.Controllers
                 if (sessionCollegeId == null)
                     return Unauthorized();
 
-                query = query.Where(s => s.CollegeId == sessionCollegeId.Value);
+                subjectsQuery = subjectsQuery
+                    .Where(s => s.CollegeId == sessionCollegeId.Value);
             }
             else if (role == "Admin")
             {
-                // 🏫 Optional college filter for Admin
+                // Optional college filter
                 if (collegeId.HasValue)
                 {
-                    query = query.Where(s => s.CollegeId == collegeId.Value);
+                    subjectsQuery = subjectsQuery
+                        .Where(s => s.CollegeId == collegeId.Value);
                 }
 
                 ViewBag.Colleges = _context.Colleges
@@ -50,11 +55,16 @@ namespace OnlineExamSystem.Controllers
                 ViewBag.SelectedCollegeId = collegeId;
             }
 
-            var subjects = query
-                .OrderBy(s => s.Name)
-                .ToList();
+            // 🔎 Search by Subject Name
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                subjectsQuery = subjectsQuery.Where(s =>
+                    s.Name != null && s.Name.Contains(search));
+            }
 
-            return View(subjects);
+            ViewBag.Search = search;
+
+            return View(await subjectsQuery.ToListAsync());
         }
 
         // =========================
@@ -213,6 +223,8 @@ namespace OnlineExamSystem.Controllers
         // =========================
         // SAFE DELETE
         // =========================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
             var role = HttpContext.Session.GetString("Role");
@@ -223,6 +235,7 @@ namespace OnlineExamSystem.Controllers
 
             var subject = _context.Subjects
                 .Include(s => s.CourseSubjects)
+                .Include(s => s.TeacherSubjects)
                 .FirstOrDefault(s => s.Id == id);
 
             if (subject == null)
@@ -232,6 +245,7 @@ namespace OnlineExamSystem.Controllers
                 (sessionCollegeId == null || subject.CollegeId != sessionCollegeId.Value))
                 return Unauthorized();
 
+            // 🔐 Block if exams exist
             bool hasExams = _context.Exams.Any(e => e.SubjectId == id);
             if (hasExams)
             {
@@ -239,6 +253,13 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Remove Teacher-Subject mappings
+            if (subject.TeacherSubjects.Any())
+            {
+                _context.TeacherSubjects.RemoveRange(subject.TeacherSubjects);
+            }
+
+            // Remove Course-Subject mappings
             if (subject.CourseSubjects.Any())
             {
                 _context.CourseSubjects.RemoveRange(subject.CourseSubjects);

@@ -50,19 +50,47 @@
                 </div>
             }
 
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    Apply Filter
-                </button>
+            <form method="get" class="row g-3 align-items-center mb-3">
 
-                <a asp-action="Index" class="btn btn-secondary">
-                    Reset
-                </a>
+                <div class="col-md-4">
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control"
+                           placeholder="Search subjects..." />
+                </div>
 
-                <a asp-action="Create" class="btn btn-success ms-auto">
-                    + Add Subject
-                </a>
-            </div>
+                @if (Context.Session.GetString("Role") == "Admin")
+                {
+                    <div class="col-md-3">
+                        <select name="collegeId" class="form-select">
+                            <option value="">All Colleges</option>
+                            @foreach (var college in ViewBag.Colleges as List<OnlineExamSystem.Models.College>)
+                            {
+                                <option value="@college.Id"
+                                        selected="@(ViewBag.SelectedCollegeId != null && (int)ViewBag.SelectedCollegeId == college.Id)">
+                                    @college.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filter
+                    </button>
+
+                    <a asp-action="Index" class="btn btn-secondary">
+                        Reset
+                    </a>
+
+                    <a asp-action="Create" class="btn btn-success ms-auto">
+                        + Add Subject
+                    </a>
+                </div>
+
+            </form>
 
         </form>
 
@@ -113,12 +141,13 @@
                                     Edit
                                 </a>
 
-                                <a asp-action="Delete"
-                                   asp-route-id="@subject.Id"
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Delete this subject?');">
+                                <button type="button"
+                                        class="btn btn-sm btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteSubjectModal"
+                                        data-subjectid="@subject.Id">
                                     Delete
-                                </a>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -137,3 +166,42 @@ else
         </p>
     </div>
 }
+
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                Are you sure you want to delete this subject?
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <form method="post" asp-action="Delete">
+                    <input type="hidden" name="id" id="deleteSubjectId" />
+                    <button type="submit" class="btn btn-danger">
+                        Yes, Delete
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    var deleteModal = document.getElementById('deleteSubjectModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var subjectId = button.getAttribute('data-subjectid');
+        document.getElementById('deleteSubjectId').value = subjectId;
+    });
+</script>

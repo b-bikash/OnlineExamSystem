@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OnlineExamSystem.Models;
+using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Helpers;
+using OnlineExamSystem.Models;
 using System.Linq;
 
 namespace OnlineExamSystem.Controllers
@@ -16,15 +17,15 @@ namespace OnlineExamSystem.Controllers
         }
 
         // LIST USERS + EMAIL SEARCH
-        public IActionResult Index(string searchEmail, int? collegeId)
+        public async Task<IActionResult> Index(string search, int? collegeId, string role)
         {
             var sessionUserId = HttpContext.Session.GetInt32("UserId");
 
             if (sessionUserId == null)
                 return RedirectToAction("Login", "Account");
 
-            var sessionUser = _context.Users
-                .FirstOrDefault(u => u.Id == sessionUserId && u.IsActive);
+            var sessionUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == sessionUserId && u.IsActive);
 
             if (sessionUser == null || sessionUser.Role != "Admin")
             {
@@ -32,31 +33,40 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var usersQuery = _context.Users.AsQueryable();
+            var usersQuery = _context.Users
+                .Include(u => u.College)
+                .AsQueryable();
 
             // 🔎 Filter by email
-            if (!string.IsNullOrWhiteSpace(searchEmail))
+            if (!string.IsNullOrWhiteSpace(search))
             {
                 usersQuery = usersQuery
-                    .Where(u => u.Email.Contains(searchEmail));
+                    .Where(u => u.Email.Contains(search));
             }
 
-            // 🏫 Filter by College (if selected)
+            // 🏫 Filter by College
             if (collegeId.HasValue)
             {
                 usersQuery = usersQuery
                     .Where(u => u.CollegeId == collegeId.Value);
             }
 
-            // Send dropdown data
-            ViewBag.Colleges = _context.Colleges
+            // 👤 Filter by Role
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                usersQuery = usersQuery
+                    .Where(u => u.Role == role);
+            }
+
+            ViewBag.Colleges = await _context.Colleges
                 .Where(c => c.IsActive)
-                .ToList();
+                .ToListAsync();
 
-            ViewBag.SearchEmail = searchEmail;
+            ViewBag.Search = search;
             ViewBag.SelectedCollegeId = collegeId;
+            ViewBag.SelectedRole = role;
 
-            var users = usersQuery.ToList();
+            var users = await usersQuery.ToListAsync();
 
             return View(users);
         }
@@ -72,28 +82,26 @@ namespace OnlineExamSystem.Controllers
             var sessionUser = _context.Users
                 .FirstOrDefault(u => u.Id == sessionUserId && u.IsActive);
 
+            // 🔐 Only Global Admin can create users from dashboard
             if (sessionUser == null || sessionUser.Role != "Admin")
             {
                 HttpContext.Session.Clear();
                 return RedirectToAction("Login", "Account");
             }
 
+            // 🔐 Load only active colleges
             ViewBag.Colleges = _context.Colleges
                 .Where(c => c.IsActive)
                 .ToList();
 
-            return View();
+            return View(new User());   // 🔥 IMPORTANT (prevents null binding issues)
         }
+
 
         // CREATE (POST)
         [HttpPost]
-        public IActionResult Create(
-    string FullName,
-    string Username,
-    string Email,
-    string Password,
-    string Role,
-    int? CollegeId)
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(User user, string FullName, string Password)
         {
             var sessionUserId = HttpContext.Session.GetInt32("UserId");
 
@@ -103,13 +111,14 @@ namespace OnlineExamSystem.Controllers
             var sessionUser = _context.Users
                 .FirstOrDefault(u => u.Id == sessionUserId && u.IsActive);
 
+            // 🔐 Only Global Admin can create users
             if (sessionUser == null || sessionUser.Role != "Admin")
             {
                 HttpContext.Session.Clear();
                 return RedirectToAction("Login", "Account");
             }
 
-            // Always repopulate colleges for View return safety
+            // 🔄 Helper to reload dropdown safely on validation failure
             void LoadColleges()
             {
                 ViewBag.Colleges = _context.Colleges
@@ -117,80 +126,83 @@ namespace OnlineExamSystem.Controllers
                     .ToList();
             }
 
-            // Basic validation
-            if (string.IsNullOrWhiteSpace(Role))
+            // 🔐 Role validation
+            if (string.IsNullOrWhiteSpace(user.Role))
             {
                 ViewBag.Error = "Role is required.";
                 LoadColleges();
-                return View();
+                return View(user);
             }
 
-            if (Role != "Admin" && CollegeId == null)
+            // 🔐 College validation (Admin must NOT have college, others MUST have)
+            if (user.Role == "Admin")
+            {
+                user.CollegeId = null; // enforce global admin
+            }
+            else if (user.CollegeId == null)
             {
                 ViewBag.Error = "College must be selected.";
                 LoadColleges();
-                return View();
+                return View(user);
             }
 
-            if (_context.Users.Any(u => u.Username == Username))
+            // 🔐 Unique username
+            if (_context.Users.Any(u => u.Username == user.Username))
             {
                 ViewBag.Error = "Username already exists.";
                 LoadColleges();
-                return View();
+                return View(user);
             }
 
-            if (_context.Users.Any(u => u.Email == Email))
+            // 🔐 Unique email
+            if (_context.Users.Any(u => u.Email == user.Email))
             {
                 ViewBag.Error = "Email already exists.";
                 LoadColleges();
-                return View();
+                return View(user);
             }
 
-            // 🔐 Enforce one TeacherAdmin per college
-            if (Role == "TeacherAdmin")
+            // 🔐 One TeacherAdmin per college enforcement
+            if (user.Role == "TeacherAdmin")
             {
-                bool exists = _context.Users
-                    .Any(u => u.Role == "TeacherAdmin" &&
-                              u.CollegeId == CollegeId.Value);
+                bool exists = _context.Users.Any(u =>
+                    u.Role == "TeacherAdmin" &&
+                    u.CollegeId == user.CollegeId);
 
                 if (exists)
                 {
                     ViewBag.Error = "This college already has a TeacherAdmin.";
                     LoadColleges();
-                    return View();
+                    return View(user);
                 }
             }
 
-            var user = new User
-            {
-                Username = Username,
-                Email = Email,
-                Role = Role,
-                CollegeId = (Role == "Admin") ? null : CollegeId,
-                PasswordHash = PasswordHelper.HashPassword(Password),
-                IsActive = true
-            };
+            // 🔐 Secure fields (never trust client)
+            user.PasswordHash = PasswordHelper.HashPassword(Password);
+            user.IsActive = true;
 
+            // 🔐 Persist user first (to generate UserId)
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            if (Role == "Student")
+            // 🔐 Create related domain entity (STRICT tenant binding)
+            if (user.Role == "Student")
             {
                 _context.Students.Add(new Student
                 {
                     UserId = user.Id,
                     Name = FullName,
                     IsProfileCompleted = false,
-                    CollegeId = CollegeId.Value
+                    CollegeId = user.CollegeId.Value // safe because validated above
                 });
             }
-            else if (Role == "Teacher" || Role == "TeacherAdmin")
+            else if (user.Role == "Teacher" || user.Role == "TeacherAdmin")
             {
                 _context.Teachers.Add(new Teacher
                 {
                     UserId = user.Id,
                     Name = FullName,
-                    CollegeId = CollegeId.Value
+                    CollegeId = user.CollegeId.Value
                 });
             }
 

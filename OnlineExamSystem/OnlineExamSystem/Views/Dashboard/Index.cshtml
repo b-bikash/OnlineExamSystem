@@ -25,6 +25,7 @@
         @* ================= ADMIN ================= *@
         @if (role == "Admin" || role == "TeacherAdmin")
         {
+            @* ================= ADMIN ANALYTICS================= *@
             @if (role == "Admin")
             {
                 var stats = Model as OnlineExamSystem.Models.ViewModels.AdminDashboardViewModel;
@@ -73,7 +74,7 @@
                         <div class="col-md-3 mb-3">
                             <div class="card text-white bg-info shadow-sm">
                                 <div class="card-body">
-                                    <h6>Courses & Subjects</h6>
+                                    <h6>Courses</h6>
                                     <h3>@stats.TotalCourses</h3>
                                     <small>
                                         Subjects: @stats.TotalSubjects
@@ -86,6 +87,65 @@
                 }
             }
     
+            @* ================= TEACHERADMIN ANALYTICS================= *@
+            @if (role == "TeacherAdmin")
+            {
+                var stats = Model as OnlineExamSystem.ViewModels.TeacherAdminDashboardViewModel;
+
+                if (stats != null)
+                {
+                    <div class="row mb-4">
+
+                        <div class="col-md-3 mb-3">
+                            <div class="card text-white bg-primary shadow-sm">
+                                <div class="card-body">
+                                    <h6>Total Students</h6>
+                                    <h3>@stats.TotalStudents</h3>
+                                    <small>Teachers: @stats.TotalTeachers</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <div class="card text-white bg-success shadow-sm">
+                                <div class="card-body">
+                                    <h6>Total Exams</h6>
+                                    <h3>@stats.TotalExams</h3>
+                                    <small>
+                                        Live: @stats.LiveExamsCount |
+                                        Upcoming: @stats.UpcomingExamsCount |
+                                        Completed: @stats.CompletedExamsCount
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <div class="card text-white bg-info shadow-sm">
+                                <div class="card-body">
+                                    <h6>Courses</h6>
+                                    <h3>@stats.TotalCourses</h3>
+                                    <small>Subjects: @stats.TotalSubjects</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <div class="card text-white bg-dark shadow-sm">
+                                <div class="card-body">
+                                    <h6>Total Exam Attempts</h6>
+                                    <h3>@stats.TotalExamAttempts</h3>
+                                    @if (stats.AverageScore.HasValue)
+                                    {
+                                        <small>Avg Score: @stats.AverageScore.Value.ToString("0.00")</small>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                }
+            }
             @if (role == "Admin")
             {
                 <!-- User Management -->
