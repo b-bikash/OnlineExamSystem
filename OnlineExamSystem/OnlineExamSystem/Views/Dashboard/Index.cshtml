@@ -261,6 +261,24 @@
                     </div>
                 </div>
             </div>
+            <!-- Import / Export Management -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">Import / Export</h5>
+                        <p class="card-text text-muted">
+                            Bulk import courses & subjects or export existing data.
+                        </p>
+                        <div class="mt-auto">
+                            <a asp-controller="TeacherAdminImport"
+                               asp-action="Index"
+                               class="btn btn-outline-primary btn-sm">
+                                Manage Import / Export
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
 
         @* ================= TEACHER ================= *@

@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OnlineExamSystem.Models;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Helpers;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using OnlineExamSystem.Models;
+using OnlineExamSystem.Services.ImportExport;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<AdminAuthorizeFilter>();
 builder.Services.AddScoped<SessionValidationFilter>();
+builder.Services.AddScoped<IImportService, ImportService>();
 
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

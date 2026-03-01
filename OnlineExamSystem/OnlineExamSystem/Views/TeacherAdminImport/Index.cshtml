@@ -1,0 +1,90 @@
+﻿@using OnlineExamSystem.Services.ImportExport
+@{
+    ViewData["Title"] = "Import Course & Subjects";
+    var role = Context.Session.GetString("Role");
+    var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
+    ImportResultDto? result = null;
+
+    if (TempData["ImportResult"] is string json && !string.IsNullOrWhiteSpace(json))
+    {
+        result = System.Text.Json.JsonSerializer.Deserialize<ImportResultDto>(json);
+    }
+}
+
+<h2 class="mb-4">Import Course & Subject Data</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+@if (result != null)
+{
+    <div class="alert alert-info">
+        <strong>Import Summary:</strong><br />
+        Total Rows: @result.TotalRows <br />
+        Inserted Courses: @result.InsertedCourses <br />
+        Inserted Subjects: @result.InsertedSubjects <br />
+        Inserted Mappings: @result.InsertedMappings <br />
+        Skipped Duplicates: @result.SkippedDuplicates <br />
+        Invalid Rows: @result.InvalidRows
+    </div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+
+        <form asp-action="Import" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            @if (role == "Admin")
+            {
+                <div class="mb-3">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select">
+                        <option value="">-- Select College --</option>
+                        @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
+                        {
+                            <option value="@college.Id">@college.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Upload CSV File</label>
+                <input type="file" name="file" class="form-control" accept=".csv" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Import
+            </button>
+        </form>
+        <hr />
+        <h5 class="mt-3">Export Existing Data</h5>
+
+        <form asp-action="Export" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (role == "Admin")
+            {
+                <div class="mb-3">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select">
+                        <option value="">-- Select College --</option>
+                        @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
+                        {
+                            <option value="@college.Id">@college.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <button type="submit" class="btn btn-success">
+                Export CSV
+            </button>
+        </form>
+    </div>
+</div>
