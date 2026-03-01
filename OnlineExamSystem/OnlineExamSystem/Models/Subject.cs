@@ -14,7 +14,7 @@ namespace OnlineExamSystem.Models
         [Required]
         [MaxLength(30)]
         public string Code { get; set; }
-
+        public bool IsActive { get; set; } = true;
         public int CollegeId { get; set; }
     public College? College { get; set; }
 

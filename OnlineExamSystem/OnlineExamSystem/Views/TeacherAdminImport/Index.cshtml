@@ -33,6 +33,29 @@
     </div>
 }
 
+@if (TempData["ResetWarning"] != null)
+{
+    var warningCollegeId = TempData["ResetWarningCollegeId"];
+
+    <div class="alert alert-warning">
+        <strong>Warning:</strong><br />
+        @TempData["ResetWarning"]
+
+        <form asp-action="ConfirmResetAcademicData" method="post" class="mt-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="collegeId" value="@warningCollegeId" />
+
+            <button type="submit" class="btn btn-danger btn-sm">
+                Proceed Anyway
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary btn-sm ms-2">
+                Cancel
+            </a>
+        </form>
+    </div>
+}
+
 <div class="card shadow-sm border-0">
     <div class="card-body">
 
@@ -84,6 +107,34 @@
 
             <button type="submit" class="btn btn-success">
                 Export CSV
+            </button>
+        </form>
+
+        <hr />
+
+        <h5 class="mt-3 text-danger">Reset Academic Data</h5>
+
+        <form asp-action="ResetAcademicData" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (role == "Admin")
+            {
+                <div class="mb-3">
+                    <label class="form-label">College</label>
+                    <select name="collegeId" class="form-select" required>
+                        <option value="">-- Select College --</option>
+                        @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
+                        {
+                            <option value="@college.Id">@college.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <button type="submit"
+                    class="btn btn-danger"
+                    onclick="return confirm('Are you sure? This will deactivate all courses and subjects for the selected college.')">
+                Reset Academic Data
             </button>
         </form>
     </div>

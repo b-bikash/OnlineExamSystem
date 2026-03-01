@@ -12,7 +12,7 @@ namespace OnlineExamSystem.Models
         public string Name { get; set; }
         public int CollegeId { get; set; }
         public College? College { get; set; }
-
+        public bool IsActive { get; set; } = true;
         // -------------------------------
         // NAVIGATION PROPERTIES
         // -------------------------------

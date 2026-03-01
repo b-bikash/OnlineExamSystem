@@ -143,5 +143,129 @@ namespace OnlineExamSystem.Controllers
 
             return System.Text.Encoding.UTF8.GetBytes(sb.ToString());
         }
+
+        // =========================
+        // RESET ACADEMIC DATA (STEP 1)
+        // =========================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetAcademicData(int? collegeId)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
+
+            int finalCollegeId;
+
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null)
+                    return Unauthorized();
+
+                finalCollegeId = sessionCollegeId.Value;
+            }
+            else
+            {
+                if (collegeId == null || collegeId == 0)
+                {
+                    TempData["Error"] = "Please select a college.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                finalCollegeId = collegeId.Value;
+            }
+
+            // 🔍 Check if exams exist for this college
+            bool examsExist = await _context.Exams
+                .AnyAsync(e => e.CollegeId == finalCollegeId);
+
+            if (examsExist)
+            {
+                TempData["ResetWarningCollegeId"] = finalCollegeId;
+                TempData["ResetWarning"] = "Exams already exist for this college. Reset will deactivate courses & subjects but exams will remain. Do you want to proceed?";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            // No exams → perform reset directly
+            await PerformSoftReset(finalCollegeId);
+
+            TempData["Success"] = "Academic data reset successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task PerformSoftReset(int collegeId)
+        {
+            // Remove CourseSubjects
+            var courseIds = await _context.Courses
+                .Where(c => c.CollegeId == collegeId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var subjectIds = await _context.Subjects
+                .Where(s => s.CollegeId == collegeId)
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            var courseSubjects = _context.CourseSubjects
+                .Where(cs => courseIds.Contains(cs.CourseId));
+
+            _context.CourseSubjects.RemoveRange(courseSubjects);
+
+            var teacherSubjects = _context.TeacherSubjects
+                .Where(ts => subjectIds.Contains(ts.SubjectId));
+
+            _context.TeacherSubjects.RemoveRange(teacherSubjects);
+
+            // Soft deactivate Courses
+            var courses = await _context.Courses
+                .Where(c => c.CollegeId == collegeId)
+                .ToListAsync();
+
+            foreach (var course in courses)
+                course.IsActive = false;
+
+            // Soft deactivate Subjects
+            var subjects = await _context.Subjects
+                .Where(s => s.CollegeId == collegeId)
+                .ToListAsync();
+
+            foreach (var subject in subjects)
+                subject.IsActive = false;
+
+            await _context.SaveChangesAsync();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmResetAcademicData(int collegeId)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (role != "Admin" && role != "TeacherAdmin")
+                return RedirectToAction("Index", "Dashboard");
+
+            int finalCollegeId;
+
+            if (role == "TeacherAdmin")
+            {
+                if (sessionCollegeId == null || sessionCollegeId.Value != collegeId)
+                    return Unauthorized();
+
+                finalCollegeId = sessionCollegeId.Value;
+            }
+            else
+            {
+                finalCollegeId = collegeId;
+            }
+
+            await PerformSoftReset(finalCollegeId);
+
+            TempData["Success"] = "Academic data reset successfully (exams preserved).";
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
