@@ -26,9 +26,7 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var subjectsQuery = _context.Subjects
-                .Include(s => s.College)
-                .AsQueryable();
+            var subjectsQuery = _context.Subjects.Where(s => s.IsActive).Include(s => s.College).AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college
             if (role == "TeacherAdmin")

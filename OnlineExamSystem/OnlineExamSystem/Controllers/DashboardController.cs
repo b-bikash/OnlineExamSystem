@@ -77,12 +77,12 @@ namespace OnlineExamSystem.Controllers
                     TotalColleges = _context.Colleges.Count(),
                     ActiveColleges = _context.Colleges.Count(c => c.IsActive),
 
-                    TotalUsers = _context.Users.Count(),
+                    TotalUsers = _context.Users.Count(c => c.IsActive),
                     TotalStudents = _context.Students.Count(),
                     TotalTeachers = _context.Teachers.Count(),
 
-                    TotalCourses = _context.Courses.Count(),
-                    TotalSubjects = _context.Subjects.Count(),
+                    TotalCourses = _context.Courses.Count(c => c.IsActive),
+                    TotalSubjects = _context.Subjects.Count(c => c.IsActive),
 
                     TotalExams = _context.Exams.Count(),
                     LiveExams = _context.Exams.Count(e =>

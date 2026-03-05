@@ -61,6 +61,7 @@ namespace OnlineExamSystem.Controllers
                 .Include(s => s.Course)
                 .Include(s => s.College)
                 .AsNoTracking()
+                .Where(s => s.User != null && s.User.IsActive)
                 .FirstOrDefault(s => s.UserId == userId.Value);
 
             if (student == null)
@@ -79,7 +80,7 @@ namespace OnlineExamSystem.Controllers
             ViewBag.CollegeName = collegeName; 
             
             ViewBag.Courses = _context.Courses
-                .Where(c => c.CollegeId == sessionCollegeId.Value)
+                .Where(c => c.CollegeId == sessionCollegeId.Value && c.IsActive)
                 .ToList();
 
             ViewBag.Colleges = _context.Colleges
@@ -114,7 +115,7 @@ namespace OnlineExamSystem.Controllers
             // 🔐 Validate Course belongs to college
             bool validCourse = _context.Courses.Any(c =>
                 c.Id == model.CourseId &&
-                c.CollegeId == sessionCollegeId.Value);
+                c.CollegeId == sessionCollegeId.Value && c.IsActive);
 
             if (!validCourse)
             {

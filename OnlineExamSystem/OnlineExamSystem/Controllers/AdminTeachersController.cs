@@ -28,8 +28,9 @@ namespace OnlineExamSystem.Controllers
             var teachersQuery = _context.Teachers
                 .Include(t => t.User)
                 .Include(t => t.TeacherSubjects)
-                    .ThenInclude(ts => ts.Subject)
+                .ThenInclude(ts => ts.Subject)
                 .Include(t => t.College)
+                .Where(t => t.User != null && t.User.IsActive)
                 .AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college

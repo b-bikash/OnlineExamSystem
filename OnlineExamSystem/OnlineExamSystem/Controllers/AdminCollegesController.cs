@@ -23,7 +23,7 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", "Dashboard");
             }
 
-            var collegesQuery = _context.Colleges.AsQueryable();
+            var collegesQuery = _context.Colleges.Where(u => u.IsActive).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -68,11 +68,21 @@ namespace OnlineExamSystem.Controllers
                 return View(model);
             }
 
-            var collegeExists = _context.Colleges
-                .Any(c => c.Name.ToLower() == model.Name.ToLower());
+            var existingCollege = _context.Colleges
+    .FirstOrDefault(c => c.Name.ToLower() == model.Name.ToLower());
 
-            if (collegeExists)
+            if (existingCollege != null)
             {
+                if (!existingCollege.IsActive)
+                {
+                    existingCollege.IsActive = true;
+                    _context.Colleges.Update(existingCollege);
+                    _context.SaveChanges();
+
+                    TempData["Success"] = "College reactivated successfully.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 ModelState.AddModelError("Name", "A college with this name already exists.");
                 return View(model);
             }
@@ -189,7 +199,8 @@ namespace OnlineExamSystem.Controllers
                 return NotFound();
             }
 
-            _context.Colleges.Remove(college);
+            college.IsActive = false;
+            _context.Colleges.Update(college);
             _context.SaveChanges();
 
             TempData["Success"] = "College deleted successfully.";

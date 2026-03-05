@@ -120,64 +120,90 @@ namespace OnlineExamSystem.Services.ImportExport
                 .GroupBy(r => r.Code.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.First())
                 .ToList();
-            // 📦 Load Existing Courses (College-wise)
+            // 📦 Load Existing Courses (College-wise) with full entity
             var existingCourses = await _context.Courses
                 .Where(c => c.CollegeId == collegeId)
-                .Select(c => c.Name)
                 .ToListAsync();
 
-            var existingCourseSet = new HashSet<string>(
-                existingCourses,
-                StringComparer.OrdinalIgnoreCase);
+            var existingCourseDict = existingCourses
+                .ToDictionary(
+                    c => c.Name.Trim(),
+                    c => c,
+                    StringComparer.OrdinalIgnoreCase);
 
-            // 📦 Load Existing Subject Codes (College-wise)
-            var existingSubjectCodes = await _context.Subjects
+            // 📦 Load Existing Subjects (College-wise) with full entity
+            var existingSubjects = await _context.Subjects
                 .Where(s => s.CollegeId == collegeId)
-                .Select(s => s.Code)
                 .ToListAsync();
 
-            var existingSubjectSet = new HashSet<string>(
-                existingSubjectCodes,
-                StringComparer.OrdinalIgnoreCase);
+            var existingSubjectDict = existingSubjects
+                .ToDictionary(
+                    s => s.Code.Trim(),
+                    s => s,
+                    StringComparer.OrdinalIgnoreCase);
 
             // 🆕 Insert New Courses
             foreach (var courseName in uniqueCourses)
             {
-                if (!existingCourseSet.Contains(courseName))
+                var trimmedName = courseName.Trim();
+
+                if (existingCourseDict.TryGetValue(trimmedName, out var existingCourse))
+                {
+                    if (!existingCourse.IsActive)
+                    {
+                        existingCourse.IsActive = true;
+                        result.InsertedCourses++; // counting as restored
+                    }
+                }
+                else
                 {
                     var newCourse = new Course
                     {
-                        Name = courseName.Trim(),
-                        CollegeId = collegeId
+                        Name = trimmedName,
+                        CollegeId = collegeId,
+                        IsActive = true
                     };
 
                     _context.Courses.Add(newCourse);
                     result.InsertedCourses++;
 
-                    existingCourseSet.Add(courseName); // update in-memory set
+                    existingCourseDict[trimmedName] = newCourse;
                 }
             }
 
             // 🆕 Insert New Subjects
             foreach (var subject in uniqueSubjects)
             {
-                if (!existingSubjectSet.Contains(subject.Code))
+                var trimmedCode = subject.Code.Trim();
+                var trimmedName = subject.Name.Trim();
+
+                if (existingSubjectDict.TryGetValue(trimmedCode, out var existingSubject))
+                {
+                    if (!existingSubject.IsActive)
+                    {
+                        existingSubject.IsActive = true;
+                        existingSubject.Name = trimmedName; // update name on reactivation
+                        result.InsertedSubjects++; // counting as restored
+                    }
+                    else
+                    {
+                        result.SkippedDuplicates++;
+                    }
+                }
+                else
                 {
                     var newSubject = new Subject
                     {
-                        Name = subject.Name.Trim(),
-                        Code = subject.Code.Trim(),
-                        CollegeId = collegeId
+                        Name = trimmedName,
+                        Code = trimmedCode,
+                        CollegeId = collegeId,
+                        IsActive = true
                     };
 
                     _context.Subjects.Add(newSubject);
                     result.InsertedSubjects++;
 
-                    existingSubjectSet.Add(subject.Code); // update in-memory set
-                }
-                else
-                {
-                    result.SkippedDuplicates++;
+                    existingSubjectDict[trimmedCode] = newSubject;
                 }
             }
             // 💾 Save newly inserted Courses and Subjects
@@ -201,9 +227,12 @@ namespace OnlineExamSystem.Services.ImportExport
 
             // 📌 Load existing mappings for this college
             var existingMappings = await _context.CourseSubjects
-                .Where(cs => courseDictionary.Values.Contains(cs.CourseId))
-                .Select(cs => new { cs.CourseId, cs.SubjectId })
-                .ToListAsync();
+    .Where(cs => _context.Courses
+        .Where(c => c.CollegeId == collegeId)
+        .Select(c => c.Id)
+        .Contains(cs.CourseId))
+    .Select(cs => new { cs.CourseId, cs.SubjectId })
+    .ToListAsync();
 
             var mappingSet = new HashSet<(int, int)>(
                 existingMappings.Select(m => (m.CourseId, m.SubjectId))

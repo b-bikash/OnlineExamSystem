@@ -9,11 +9,11 @@ namespace OnlineExamSystem.Models
 
     [Required]
     [MaxLength(100)]
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(30)]
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public int CollegeId { get; set; }
     public College? College { get; set; }

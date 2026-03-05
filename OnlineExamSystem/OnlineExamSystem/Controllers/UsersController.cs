@@ -66,7 +66,7 @@ namespace OnlineExamSystem.Controllers
             ViewBag.SelectedCollegeId = collegeId;
             ViewBag.SelectedRole = role;
 
-            var users = await usersQuery.ToListAsync();
+            var users = await usersQuery.Where(c => c.IsActive).ToListAsync();
 
             return View(users);
         }
@@ -245,11 +245,16 @@ namespace OnlineExamSystem.Controllers
                 var student = _context.Students.FirstOrDefault(s => s.UserId == user.Id);
                 ViewBag.FullName = student?.Name;
             }
-            else if (user.Role == "Teacher")
+            else if (user.Role == "Teacher" || user.Role == "TeacherAdmin")
             {
                 var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
                 ViewBag.FullName = teacher?.Name;
             }
+            //else if (user.Role == "TeacherAdmin")
+            //{
+              //  var teacher = _context.Teachers.FirstOrDefault(t => t.UserId == user.Id);
+                //ViewBag.FullName = teacher?.Name;
+            //}
 
             return View(user);
         }
@@ -417,38 +422,6 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction("Index");
         }
 
-        /* DELETE (GET)
-        public IActionResult Delete(int id)
-        {
-            var sessionUserId = HttpContext.Session.GetInt32("UserId");
-
-            if (sessionUserId == null)
-                return RedirectToAction("Login", "Account");
-
-            var sessionUser = _context.Users
-                .FirstOrDefault(u => u.Id == sessionUserId && u.IsActive);
-
-            if (sessionUser == null || sessionUser.Role != "Admin")
-            {
-                HttpContext.Session.Clear();
-                return RedirectToAction("Login", "Account");
-            }
-
-            var currentUserId = HttpContext.Session.GetInt32("UserId");
-            if (currentUserId == id)
-            {
-                return RedirectToAction("Index");
-            }
-
-            var user = _context.Users.FirstOrDefault(u => u.Id == id);
-            if (user == null)
-            {
-                return RedirectToAction("Index");
-            }
-
-            return View(user);
-        }*/
-
         // DELETE (POST)
         [HttpPost]
         public IActionResult DeleteConfirmed(int id)
@@ -473,7 +446,8 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index");
             }
 
-            _context.Users.Remove(user);
+            user.IsActive = false;
+            _context.Users.Update(user);
             _context.SaveChanges();
 
             return RedirectToAction("Index");

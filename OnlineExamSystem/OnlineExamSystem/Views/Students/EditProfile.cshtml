@@ -7,32 +7,51 @@
 <h2>Edit Profile</h2>
 
 <div asp-validation-summary="All" class="text-danger"></div>
+
 <form asp-action="EditProfile" method="post">
 
+    <!-- Name -->
     <div class="mb-3">
         <label class="form-label">Full Name</label>
         <input asp-for="Name" class="form-control" />
     </div>
 
+    <!-- College -->
+    <div class="mb-3">
+        <label class="form-label">College</label>
+
+        @if (ViewBag.IsAdmin == true)
+        {
+            <select asp-for="CollegeId"
+                    asp-items="@(new SelectList(ViewBag.Colleges, "Id", "Name", Model.CollegeId))"
+                    class="form-select"
+                    id="collegeDropdown">
+            </select>
+        }
+        else
+        {
+            <input type="text"
+                   class="form-control"
+                   value="@ViewBag.CollegeName"
+                   readonly />
+        }
+    </div>
+
+    <!-- Course -->
     <div class="mb-3">
         <label class="form-label">Course</label>
-        <select asp-for="CourseId" class="form-select">
+
+        <select asp-for="CourseId"
+                asp-items="@(new SelectList(ViewBag.Courses, "Id", "Name", Model.CourseId))"
+                class="form-select"
+                id="courseDropdown">
+
             <option value="">-- Select Course --</option>
 
-            @foreach (var course in ViewBag.Courses)
-            {
-                <option value="@course.Id">@course.Name</option>
-            }
         </select>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">College</label>
-        <input type="text" class="form-control"
-               value="@ViewBag.CollegeName"
-               readonly />
-    </div>
-
+    <!-- Roll Number -->
     <div class="mb-3">
         <label class="form-label">Roll Number</label>
         <input asp-for="RollNumber" class="form-control" />
@@ -43,7 +62,32 @@
         Save Profile
     </button>
 
-    @section Scripts {
-        <partial name="_ValidationScriptsPartial" />
-    }
 </form>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $("#collegeDropdown").change(function () {
+
+            var collegeId = $(this).val();
+
+            $.get("/AdminStudent/GetCoursesByCollege",
+                { collegeId: collegeId },
+                function (data) {
+
+                    var courseDropdown = $("#courseDropdown");
+                    courseDropdown.empty();
+
+                    courseDropdown.append('<option value="">-- Select Course --</option>');
+
+                    $.each(data, function (i, course) {
+                        courseDropdown.append(
+                            `<option value="${course.id}">${course.name}</option>`
+                        );
+                    });
+                });
+        });
+    </script>
+}

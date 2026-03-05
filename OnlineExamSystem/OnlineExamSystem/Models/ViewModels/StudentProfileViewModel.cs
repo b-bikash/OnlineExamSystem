@@ -9,6 +9,8 @@ namespace OnlineExamSystem.Models.ViewModels
 
         public int? CourseId { get; set; }
 
+        public int? CollegeId { get; set; }
+
         public string RollNumber { get; set; }
     }
 }

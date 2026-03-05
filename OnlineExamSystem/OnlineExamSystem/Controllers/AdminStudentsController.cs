@@ -27,6 +27,7 @@ namespace OnlineExamSystem.Controllers
                 .Include(s => s.User)
                 .Include(s => s.Course)
                 .Include(s => s.College)
+                .Where(s => s.User != null && s.User.IsActive)
                 .AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college
@@ -81,33 +82,61 @@ namespace OnlineExamSystem.Controllers
                 .Include(s => s.User)
                 .Include(s => s.Course)
                 .Include(s => s.College)
+                .Where(s => s.User != null && s.User.IsActive)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (student == null)
                 return Unauthorized();
+            ViewBag.IsAdmin = role == "Admin";
+            ViewBag.CollegeName = student.College?.Name;
 
+            // ---------------- TEACHER ADMIN ----------------
             if (role == "TeacherAdmin")
             {
                 if (sessionCollegeId == null || student.CollegeId != sessionCollegeId.Value)
                     return Unauthorized();
 
-                ViewBag.Courses = _context.Courses
-                    .Where(c => c.CollegeId == sessionCollegeId.Value)
-                    .ToList();
+                // Only active courses of teacher's college
+                ViewBag.Courses = await _context.Courses
+                    .Where(c => c.CollegeId == sessionCollegeId.Value && c.IsActive)
+                    .ToListAsync();
 
-                ViewBag.Colleges = _context.Colleges
+                // Teacher admin cannot change college
+                ViewBag.Colleges = await _context.Colleges
                     .Where(c => c.Id == sessionCollegeId.Value)
-                    .ToList();
+                    .ToListAsync();
             }
-            else
+            // ---------------- ADMIN ----------------
+            else if (role == "Admin")
             {
-                ViewBag.Courses = _context.Courses.ToList();
-                ViewBag.Colleges = _context.Colleges.ToList();
+                // Admin can change college
+                ViewBag.Colleges = await _context.Colleges
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+
+                // IMPORTANT:
+                // Load courses ONLY for student's current college initially
+                ViewBag.Courses = await _context.Courses
+                    .Where(c => c.CollegeId == student.CollegeId && c.IsActive)
+                    .ToListAsync();
             }
 
             return View(student);
         }
+        [HttpGet]
+        public async Task<IActionResult> GetCoursesByCollege(int collegeId)
+        {
+            var courses = await _context.Courses
+                .Where(c => c.CollegeId == collegeId && c.IsActive)
+                .Select(c => new
+                {
+                    id = c.Id,
+                    name = c.Name
+                })
+                .ToListAsync();
 
+            return Json(courses);
+        }
         // POST: Edit
         [HttpPost]
         public async Task<IActionResult> Edit(int id, Student model)

@@ -26,7 +26,7 @@ namespace OnlineExamSystem.Controllers
             if (role != "Admin" && role != "TeacherAdmin")
                 return RedirectToAction("Index", "Dashboard");
 
-            var coursesQuery = _context.Courses.AsQueryable();
+            var coursesQuery = _context.Courses.Where(c => c.IsActive).AsQueryable();
 
             // 🔐 TeacherAdmin → Only own college
             if (role == "TeacherAdmin")
@@ -266,7 +266,8 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.Courses.Remove(course);
+            course.IsActive = false;
+            _context.Courses.Update(course);
             _context.SaveChanges();
 
             TempData["Success"] = "Course deleted successfully.";
