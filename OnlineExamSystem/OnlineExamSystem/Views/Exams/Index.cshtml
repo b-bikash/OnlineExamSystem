@@ -166,12 +166,23 @@
                                             <td>@item.Exam.Subject?.Name</td>
                                             <td>@item.TeacherName</td>
                                             <td>
-                                                <a asp-controller="ExamAttempts"
-                                                   asp-action="Result"
-                                                   asp-route-attemptId="@item.Attempt.Id"
-                                                   class="btn btn-sm btn-info">
-                                                    View Result
-                                                </a>
+                                                @if (item.Exam.EndDateTime.HasValue && item.Exam.EndDateTime.Value > now)
+                                                {
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-info" 
+                                                            onclick="alert('Results will be available once the assigned time window for the exam is over.')">
+                                                        View Result
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="ExamAttempts"
+                                                       asp-action="Result"
+                                                       asp-route-attemptId="@item.Attempt.Id"
+                                                       class="btn btn-sm btn-info">
+                                                        View Result
+                                                    </a>
+                                                }
                                             </td>
                                         </tr>
                                     }

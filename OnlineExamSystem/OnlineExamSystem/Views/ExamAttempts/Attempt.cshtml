@@ -116,8 +116,49 @@
         border: none;
         cursor: pointer;
     }
+
+    #fullscreen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    #exam-content {
+        display: none;
+    }
+
+    .fullscreen-btn {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    .fullscreen-btn:hover {
+        background-color: #1d4ed8;
+    }
 </style>
 
+<div id="fullscreen-overlay">
+    <h2>Fullscreen Mode Required</h2>
+    <p>This exam requires you to be in fullscreen mode to ensure a secure environment.</p>
+    <button id="btn-enter-fullscreen" class="fullscreen-btn">Enter Fullscreen</button>
+</div>
+
+<div id="exam-content">
 <div class="exam-header">
     <div>📘 @Model.ExamTitle</div>
     <div id="examTimer" style="font-size: 1.25rem; font-weight: bold; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 5px;">
@@ -218,8 +259,50 @@
 
     </div>
 </div>
+</div> <!-- End exam-content -->
 
 <script>
+    // Fullscreen enforcement
+    const overlay = document.getElementById('fullscreen-overlay');
+    const examContent = document.getElementById('exam-content');
+    const btnEnterFullscreen = document.getElementById('btn-enter-fullscreen');
+
+    btnEnterFullscreen.addEventListener('click', () => {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.mozRequestFullScreen) { // Firefox
+            elem.mozRequestFullScreen();
+        } else if (elem.webkitRequestFullscreen) { // Chrome, Safari and Opera
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { // IE/Edge
+            elem.msRequestFullscreen();
+        }
+    });
+
+    function checkFullscreen() {
+        const isFullscreen = document.fullscreenElement ||
+                             document.webkitIsFullScreen ||
+                             document.mozFullScreen ||
+                             document.msFullscreenElement;
+
+        if (!isFullscreen) {
+            overlay.style.display = 'flex';
+            examContent.style.display = 'none';
+        } else {
+            overlay.style.display = 'none';
+            examContent.style.display = 'block';
+        }
+    }
+
+    document.addEventListener('fullscreenchange', checkFullscreen);
+    document.addEventListener('webkitfullscreenchange', checkFullscreen);
+    document.addEventListener('mozfullscreenchange', checkFullscreen);
+    document.addEventListener('MSFullscreenChange', checkFullscreen);
+    
+    // Initial check
+    checkFullscreen();
+
     // Exam Timer Logic for single-question view
     let remainingSeconds = @remainingSeconds;
     const timerElement = document.getElementById('examTimer');

@@ -30,7 +30,9 @@ namespace OnlineExamSystem.Services.ImportExport
                 return result;
             }
 
-            using var stream = file.OpenReadStream();
+            try
+            {
+                using var stream = file.OpenReadStream();
             using var reader = new StreamReader(stream);
 
             // 📌 Read Header
@@ -38,7 +40,7 @@ namespace OnlineExamSystem.Services.ImportExport
 
             if (string.IsNullOrWhiteSpace(headerLine))
             {
-                result.Errors.Add("CSV header is missing.");
+                result.Errors.Add("CSV header is missing or file is empty.");
                 return result;
             }
 
@@ -84,7 +86,8 @@ namespace OnlineExamSystem.Services.ImportExport
                 if (columns.Length <= Math.Max(courseIndex, Math.Max(codeIndex, nameIndex)))
                 {
                     result.InvalidRows++;
-                    result.Errors.Add($"Row {rowNumber}: Invalid column structure.");
+                    if (result.Errors.Count < 10)
+                        result.Errors.Add($"Row {rowNumber}: Invalid column structure.");
                     continue;
                 }
 
@@ -95,9 +98,15 @@ namespace OnlineExamSystem.Services.ImportExport
                 if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
                 {
                     result.InvalidRows++;
-                    result.Errors.Add($"Row {rowNumber}: Subject Code and Subject Name are required.");
+                    if (result.Errors.Count < 10)
+                        result.Errors.Add($"Row {rowNumber}: Subject Code and Subject Name are required.");
                     continue;
                 }
+
+                // Enforce max lengths to prevent DbUpdateException string truncation errors
+                if (course != null && course.Length > 200) course = course.Substring(0, 200);
+                if (code.Length > 30) code = code.Substring(0, 30);
+                if (name.Length > 100) name = name.Substring(0, 100);
 
                 cleanedRows.Add((
                     Course: course ?? string.Empty,
@@ -122,24 +131,28 @@ namespace OnlineExamSystem.Services.ImportExport
                 .ToList();
             // 📦 Load Existing Courses (College-wise) with full entity
             var existingCourses = await _context.Courses
+                .AsNoTracking()
                 .Where(c => c.CollegeId == collegeId)
                 .ToListAsync();
 
             var existingCourseDict = existingCourses
+                .GroupBy(c => c.Name?.Trim() ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
-                    c => c.Name.Trim(),
-                    c => c,
+                    g => g.Key,
+                    g => g.First(),
                     StringComparer.OrdinalIgnoreCase);
 
             // 📦 Load Existing Subjects (College-wise) with full entity
             var existingSubjects = await _context.Subjects
+                .AsNoTracking()
                 .Where(s => s.CollegeId == collegeId)
                 .ToListAsync();
 
             var existingSubjectDict = existingSubjects
+                .GroupBy(s => s.Code?.Trim() ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
-                    s => s.Code.Trim(),
-                    s => s,
+                    g => g.Key,
+                    g => g.First(),
                     StringComparer.OrdinalIgnoreCase);
 
             // 🆕 Insert New Courses
@@ -209,22 +222,6 @@ namespace OnlineExamSystem.Services.ImportExport
             // 💾 Save newly inserted Courses and Subjects
             await _context.SaveChangesAsync();
 
-            // 🔄 Reload Courses with IDs
-            var courseDictionary = await _context.Courses
-                .Where(c => c.CollegeId == collegeId)
-                .ToDictionaryAsync(
-                    c => c.Name,
-                    c => c.Id,
-                    StringComparer.OrdinalIgnoreCase);
-
-            // 🔄 Reload Subjects with IDs
-            var subjectDictionary = await _context.Subjects
-                .Where(s => s.CollegeId == collegeId)
-                .ToDictionaryAsync(
-                    s => s.Code,
-                    s => s.Id,
-                    StringComparer.OrdinalIgnoreCase);
-
             // 📌 Load existing mappings for this college
             var existingMappings = await _context.CourseSubjects
     .Where(cs => _context.Courses
@@ -244,11 +241,14 @@ namespace OnlineExamSystem.Services.ImportExport
                 if (string.IsNullOrWhiteSpace(row.Course))
                     continue;
 
-                if (!courseDictionary.TryGetValue(row.Course, out var courseId))
+                if (!existingCourseDict.TryGetValue(row.Course.Trim(), out var courseObj))
                     continue;
 
-                if (!subjectDictionary.TryGetValue(row.Code, out var subjectId))
+                if (!existingSubjectDict.TryGetValue(row.Code.Trim(), out var subjectObj))
                     continue;
+
+                var courseId = courseObj.Id;
+                var subjectId = subjectObj.Id;
 
                 var key = (courseId, subjectId);
 
@@ -267,6 +267,14 @@ namespace OnlineExamSystem.Services.ImportExport
 
             // 💾 Save new mappings
             await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                if (result.Errors.Count < 10)
+                {
+                    result.Errors.Add($"Import stopped due to an unexpected error: {ex.Message}");
+                }
+            }
 
             return result;
         }

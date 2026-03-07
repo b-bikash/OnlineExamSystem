@@ -64,6 +64,55 @@ namespace OnlineExamSystem.Controllers
             return false;
         }
 
+        // ---------------- HELPERS ----------------
+
+        private void FinalizeAbandonedAttempts(int examId, int? collegeId = null, int? studentId = null)
+        {
+            var exam = _context.Exams.AsNoTracking().FirstOrDefault(e => e.Id == examId);
+            if (exam == null) return;
+
+            var query = _context.ExamAttempts
+                .Include(a => a.StudentAnswers)
+                .Where(a => a.ExamId == examId && a.EndTime == null);
+
+            if (collegeId.HasValue)
+                query = query.Where(a => a.CollegeId == collegeId.Value);
+
+            if (studentId.HasValue)
+                query = query.Where(a => a.StudentId == studentId.Value);
+
+            var attempts = query.ToList();
+
+            if (!attempts.Any()) return;
+
+            var now = DateTime.Now;
+
+            foreach (var attempt in attempts)
+            {
+                var designatedEndTime = attempt.StartTime.AddMinutes(exam.DurationInMinutes);
+                var actualEndTime = exam.EndDateTime.HasValue && exam.EndDateTime.Value < designatedEndTime
+                    ? exam.EndDateTime.Value
+                    : designatedEndTime;
+
+                // Provide a small grace period (e.g., 2 minutes) before forcibly finalizing
+                if (now > actualEndTime.AddMinutes(2))
+                {
+                    // Calculate score
+                    attempt.Score =
+                        (from sa in attempt.StudentAnswers
+                         join opt in _context.Options on sa.SelectedOptionId equals opt.Id
+                         join q in _context.Questions on sa.QuestionId equals q.Id
+                         where opt.IsCorrect
+                         select q.Marks).Sum();
+
+                    attempt.EndTime = actualEndTime;
+                    _context.Update(attempt);
+                }
+            }
+
+            _context.SaveChanges();
+        }
+
         // ---------------- INDEX ----------------
 
         public IActionResult Index()
@@ -99,6 +148,12 @@ namespace OnlineExamSystem.Controllers
                     )
                     .OrderByDescending(e => e.EndDateTime)
                     .ToList();
+
+                // Auto-finalize before loading attempts for the student
+                foreach (var exam in exams)
+                {
+                    FinalizeAbandonedAttempts(exam.Id, student.CollegeId, student.Id);
+                }
 
                 var attempts = _context.ExamAttempts
                     .AsNoTracking()
@@ -464,6 +519,10 @@ namespace OnlineExamSystem.Controllers
             {
                 ModelState.AddModelError("EndDateTime", "End time must be after start time.");
             }
+            else if ((endDateTime - startDateTime).TotalMinutes < exam.DurationInMinutes)
+            {
+                ModelState.AddModelError("EndDateTime", $"The assigned time window ({(endDateTime - startDateTime).TotalMinutes} minutes) must be greater than or equal to the exam duration ({exam.DurationInMinutes} minutes).");
+            }
 
             if (startDateTime < DateTime.Now)
             {
@@ -504,6 +563,9 @@ namespace OnlineExamSystem.Controllers
 
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
+
+            // Auto-finalize before loading attempts
+            FinalizeAbandonedAttempts(examId);
 
             var attempts = _context.ExamAttempts
                 .AsNoTracking()
