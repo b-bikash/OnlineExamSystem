@@ -261,10 +261,6 @@
 </div>
 </div> <!-- End exam-content -->
 
-<!-- HIDDEN WEBCAM ELEMENTS -->
-<video id="webcam-video" autoplay playsinline style="display: none;"></video>
-<canvas id="webcam-canvas" style="display: none;"></canvas>
-
 <script>
     // Fullscreen enforcement
     const overlay = document.getElementById('fullscreen-overlay');
@@ -306,26 +302,6 @@
     
     // Initial check
     checkFullscreen();
-
-    // Webcam Logic
-    const video = document.getElementById('webcam-video');
-    const canvas = document.getElementById('webcam-canvas');
-
-    async function initWebcam() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            // Optionally, add logic here to unhide a preview or indicate to the user that the camera is active.
-        } catch (err) {
-            console.error("Error accessing webcam:", err);
-            alert("This exam requires webcam access. Please allow camera permissions to continue.");
-            // Optionally, you might want to prevent them from taking the exam if permission is denied.
-            // For now, we just alert.
-        }
-    }
-
-    // Initialize webcam when the page loads
-    initWebcam();
 
     // Exam Timer Logic for single-question view
     let remainingSeconds = @remainingSeconds;

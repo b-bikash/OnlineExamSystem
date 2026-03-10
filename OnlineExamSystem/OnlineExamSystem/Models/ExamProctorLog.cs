@@ -20,7 +20,9 @@ namespace OnlineExamSystem.Models
 
         public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
 
-        // Future phase 2
+        // Phase 2: Face AI Data
         public bool? SuspiciousFlag { get; set; }
+        
+        public string SuspiciousReason { get; set; }
     }
 }

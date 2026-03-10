@@ -194,6 +194,10 @@
 </div>
 </div> <!-- End exam-content -->
 
+<!-- HIDDEN WEBCAM ELEMENTS -->
+<video id="webcam-video" autoplay playsinline style="display: none;"></video>
+<canvas id="webcam-canvas" style="display: none;"></canvas>
+
 <!-- SUBMIT CONFIRM MODAL -->
 <div class="modal fade"
      id="confirmSubmitModal"
@@ -234,6 +238,9 @@
     <!-- Bootstrap Icons for Timer -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
+    <!-- Face-API.js -->
+    <script src="~/lib/face-api/face-api.min.js"></script>
+
     <script>
         // Fullscreen enforcement
         const overlay = document.getElementById('fullscreen-overlay');
@@ -275,6 +282,77 @@
 
         // Initial check
         checkFullscreen();
+
+        // Webcam & Face AI Logic
+        const video = document.getElementById('webcam-video');
+        const canvas = document.getElementById('webcam-canvas');
+        let modelsLoaded = false;
+
+        async function initWebcamAndAI() {
+            try {
+                // Load AI Models
+                await faceapi.nets.tinyFaceDetector.loadFromUri('/lib/face-api/models');
+                modelsLoaded = true;
+                console.log("Face-API models loaded successfully.");
+
+                // Request Webcam
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Error accessing webcam or loading models:", err);
+                alert("This exam requires webcam access and AI initialization. Please allow camera permissions to continue.");
+            }
+        }
+
+        initWebcamAndAI();
+
+        const ATTEMPT_ID = '@Model.Id';
+        const CAPTURE_INTERVAL_MS = 10000;
+
+        async function captureAndUploadImage() {
+            if (!video.srcObject || !modelsLoaded) return;
+
+            let suspiciousFlag = false;
+            let suspiciousReason = null;
+
+            try {
+                // 1. Run Face Detection
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                
+                if (detections.length === 0) {
+                    suspiciousFlag = true;
+                    suspiciousReason = "No face detected";
+                } else if (detections.length > 1) {
+                    suspiciousFlag = true;
+                    suspiciousReason = "Multiple faces detected";
+                }
+
+                // 2. Capture Image
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+
+                // 3. Send to Backend
+                fetch(`/ExamAttempts/CaptureImage?attemptId=${ATTEMPT_ID}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        Base64Image: base64Image,
+                        SuspiciousFlag: suspiciousFlag,
+                        SuspiciousReason: suspiciousReason
+                    })
+                })
+                .catch(err => console.error("Error:", err));
+
+            } catch(e) {
+                console.error("Error during face detection:", e);
+            }
+        }
+
+        setInterval(captureAndUploadImage, CAPTURE_INTERVAL_MS);
 
         // Exam Timer Logic
         let remainingSeconds = @remainingSeconds;

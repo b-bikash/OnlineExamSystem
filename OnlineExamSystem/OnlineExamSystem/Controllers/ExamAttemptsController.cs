@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace OnlineExamSystem.Controllers
@@ -11,10 +14,12 @@ namespace OnlineExamSystem.Controllers
     public class ExamAttemptsController : BaseController
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public ExamAttemptsController(ApplicationDbContext context)
+        public ExamAttemptsController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         // -------------------------------
@@ -463,5 +468,92 @@ namespace OnlineExamSystem.Controllers
 
             return View(attempt);
         }
+
+        // -------------------------------
+        // PROCTORING: CAPTURE IMAGE
+        // -------------------------------
+        [HttpPost]
+        public IActionResult CaptureImage(int attemptId, [FromBody] ImageCaptureRequest request)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
+                return Unauthorized(new { message = "User not authenticated." });
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized(new { message = "Invalid user." });
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized(new { message = "Student not found or tenant mismatch." });
+
+            var attempt = _context.ExamAttempts
+                .Include(a => a.Exam)
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId
+                );
+
+            if (attempt == null)
+                return Unauthorized(new { message = "Attempt not found or permission denied." });
+
+            if (attempt.EndTime != null)
+                return BadRequest(new { message = "Exam already submitted." });
+
+            if (string.IsNullOrEmpty(request?.Base64Image))
+                return BadRequest(new { message = "No image data provided." });
+
+            try
+            {
+                // Remove the "data:image/jpeg;base64," part
+                var base64Data = request.Base64Image.Contains(",") ? request.Base64Image.Split(',')[1] : request.Base64Image;
+                var imageBytes = Convert.FromBase64String(base64Data);
+
+                var proctoringDir = Path.Combine(_env.WebRootPath, "proctoring");
+                if (!Directory.Exists(proctoringDir))
+                {
+                    Directory.CreateDirectory(proctoringDir);
+                }
+
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+                var fileName = $"{attemptId}_{timestamp}.jpg";
+                var filePath = Path.Combine(proctoringDir, fileName);
+
+                System.IO.File.WriteAllBytes(filePath, imageBytes);
+
+                var relativePath = $"/proctoring/{fileName}";
+
+                var log = new ExamProctorLog
+                {
+                    ExamAttemptId = attemptId,
+                    ImagePath = relativePath,
+                    CapturedAt = DateTime.UtcNow
+                };
+
+                _context.ExamProctorLogs.Add(log);
+                _context.SaveChanges();
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                // Log this properly in a real app
+                return StatusCode(500, new { message = "Error saving image.", error = ex.Message });
+            }
+        }
+    }
+
+    public class ImageCaptureRequest
+    {
+        public string Base64Image { get; set; }
     }
 }
