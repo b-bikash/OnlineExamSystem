@@ -1,4 +1,4 @@
-﻿@model OnlineExamSystem.Models.ExamAttempt
+@model OnlineExamSystem.Models.ExamAttempt
 
 @{
     ViewData["Title"] = "Exam Result";
@@ -16,6 +16,59 @@
 </div>
 
 <hr />
+
+@* ========================================= *@
+@* PROCTORING REPORT (TEACHER / ADMIN ONLY)  *@
+@* ========================================= *@
+
+@if (Context.Session.GetString("Role") == "Teacher" || Context.Session.GetString("Role") == "Admin" || Context.Session.GetString("Role") == "TeacherAdmin")
+{
+    var allLogs = Model.ExamProctorLogs?.OrderBy(l => l.CapturedAt).ToList() ?? new List<OnlineExamSystem.Models.ExamProctorLog>();
+    var suspiciousLogs = allLogs.Where(l => l.SuspiciousFlag == true).ToList();
+    
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Proctoring Report</h5>
+        </div>
+        <div class="card-body">
+            @if (suspiciousLogs.Any())
+            {
+                var noFaceCount = suspiciousLogs.Count(l => l.SuspiciousReason.Contains("No face"));
+                var multipleFaceCount = suspiciousLogs.Count(l => l.SuspiciousReason.Contains("Multiple faces"));
+
+                <div class="row text-center mt-3">
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light border-warning h-100">
+                            <div class="card-body">
+                                <h1 class="display-4 text-warning">@noFaceCount</h1>
+                                <p class="lead mb-0 text-muted">
+                                    @(noFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>No Face Detected</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light border-danger h-100">
+                            <div class="card-body">
+                                <h1 class="display-4 text-danger">@multipleFaceCount</h1>
+                                <p class="lead mb-0 text-muted">
+                                    @(multipleFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>Multiple Faces Detected</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success mb-0 text-center">
+                    <i class="bi bi-check-circle-fill me-2"></i> No suspicious activity detected during this exam.
+                </div>
+            }
+        </div>
+    </div>
+    <hr />
+}
 
 <h3>Detailed Analysis</h3>
 

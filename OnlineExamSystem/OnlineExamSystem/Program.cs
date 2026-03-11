@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Helpers;
 using OnlineExamSystem.Models;
@@ -72,7 +73,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Configure static files to serve unknown file types (e.g., face-api model shards)
+var provider = new FileExtensionContentTypeProvider();
+var staticFileOptions = new StaticFileOptions
+{
+    ContentTypeProvider = provider,
+    ServeUnknownFileTypes = true,
+    DefaultContentType = "application/octet-stream"
+};
+app.UseStaticFiles(staticFileOptions);
 
 app.UseRouting();
 

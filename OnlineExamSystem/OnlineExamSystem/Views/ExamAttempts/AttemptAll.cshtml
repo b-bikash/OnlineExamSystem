@@ -449,5 +449,12 @@
                 modal.hide();
                 form.submit();
             });
+
+        // Prevent Back Navigation
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            alert("Using the back button is not allowed during an active exam.");
+            history.go(1);
+        };
     </script>
 }

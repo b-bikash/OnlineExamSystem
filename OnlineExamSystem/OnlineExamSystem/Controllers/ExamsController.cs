@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -570,6 +570,7 @@ namespace OnlineExamSystem.Controllers
             var attempts = _context.ExamAttempts
                 .AsNoTracking()
                 .Include(a => a.Student)
+                .Include(a => a.ExamProctorLogs) // 📸 For risk calculation
                 .Where(a => a.ExamId == examId && a.EndTime != null)
                 .OrderByDescending(a => a.EndTime)
                 .ToList();

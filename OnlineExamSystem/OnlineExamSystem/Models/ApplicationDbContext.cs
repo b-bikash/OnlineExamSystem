@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace OnlineExamSystem.Models
 {
@@ -117,7 +117,7 @@ namespace OnlineExamSystem.Models
             // -------------------------------
             modelBuilder.Entity<ExamProctorLog>()
                 .HasOne(epl => epl.ExamAttempt)
-                .WithMany()
+                .WithMany(ea => ea.ExamProctorLogs)
                 .HasForeignKey(epl => epl.ExamAttemptId)
                 .OnDelete(DeleteBehavior.Cascade);
 

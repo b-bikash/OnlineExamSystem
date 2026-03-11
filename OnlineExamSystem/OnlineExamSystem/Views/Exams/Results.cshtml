@@ -1,4 +1,4 @@
-﻿@model IEnumerable<OnlineExamSystem.Models.ExamAttempt>
+@model IEnumerable<OnlineExamSystem.Models.ExamAttempt>
 
 @{
     ViewData["Title"] = "Exam Results";
@@ -28,6 +28,7 @@ else
                 <th>Roll Number</th>
                 <th>Score</th>
                 <th>Submitted At</th>
+                <th>Proctoring Risk</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -43,6 +44,27 @@ else
                     <td>@attempt.Student?.RollNumber</td>
                     <td>@attempt.Score</td>
                     <td>@attempt.EndTime</td>
+                    <td>
+                        @{
+                            var suspiciousCount = attempt.ExamProctorLogs?.Count(l => l.SuspiciousFlag == true) ?? 0;
+                            string badgeClass = "bg-success";
+                            string riskText = "Low";
+
+                            if (suspiciousCount >= 15)
+                            {
+                                badgeClass = "bg-danger";
+                                riskText = "High";
+                            }
+                            else if (suspiciousCount >= 5)
+                            {
+                                badgeClass = "bg-warning text-dark";
+                                riskText = "Medium";
+                            }
+                        }
+                        <span class="badge @badgeClass">
+                            @riskText Risk (@suspiciousCount flags)
+                        </span>
+                    </td>
                     <td>
                         <a asp-action="Result" asp-controller="ExamAttempts" asp-route-attemptId="@attempt.Id" class="btn btn-sm btn-info">
                             View Details

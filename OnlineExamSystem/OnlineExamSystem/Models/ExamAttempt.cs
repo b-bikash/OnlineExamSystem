@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -27,5 +27,8 @@ namespace OnlineExamSystem.Models
         public int Score { get; set; }
 
         public ICollection<StudentAnswer> StudentAnswers { get; set; }
+        
+        // Phase 1/2: Proctoring Logs
+        public ICollection<ExamProctorLog> ExamProctorLogs { get; set; }
     }
 }

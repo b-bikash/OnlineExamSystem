@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -385,6 +385,7 @@ namespace OnlineExamSystem.Controllers
                     .ThenInclude(e => e.Questions)
                         .ThenInclude(q => q.Options)
                 .Include(a => a.StudentAnswers)
+                .Include(a => a.ExamProctorLogs) // 📸 For Proctoring Report
                 .AsNoTracking()
                 .FirstOrDefault(a => a.Id == attemptId);
 
@@ -536,7 +537,9 @@ namespace OnlineExamSystem.Controllers
                 {
                     ExamAttemptId = attemptId,
                     ImagePath = relativePath,
-                    CapturedAt = DateTime.UtcNow
+                    CapturedAt = DateTime.UtcNow,
+                    SuspiciousFlag = request.SuspiciousFlag,
+                    SuspiciousReason = request.SuspiciousReason
                 };
 
                 _context.ExamProctorLogs.Add(log);
@@ -555,5 +558,7 @@ namespace OnlineExamSystem.Controllers
     public class ImageCaptureRequest
     {
         public string Base64Image { get; set; }
+        public bool? SuspiciousFlag { get; set; }
+        public string SuspiciousReason { get; set; }
     }
 }
