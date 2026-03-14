@@ -47,22 +47,27 @@ else
                     <td>
                         @{
                             var suspiciousCount = attempt.ExamProctorLogs?.Count(l => l.SuspiciousFlag == true) ?? 0;
+                            var fsExitCount = attempt.FullScreenExitCount;
+                            
+                            // Let's say 1 full screen exit = 5 risk points, 1 suspicious frame = 1 risk point
+                            var totalRiskScore = suspiciousCount + (fsExitCount * 5);
+
                             string badgeClass = "bg-success";
                             string riskText = "Low";
 
-                            if (suspiciousCount >= 15)
+                            if (totalRiskScore >= 15)
                             {
                                 badgeClass = "bg-danger";
                                 riskText = "High";
                             }
-                            else if (suspiciousCount >= 5)
+                            else if (totalRiskScore >= 5)
                             {
                                 badgeClass = "bg-warning text-dark";
                                 riskText = "Medium";
                             }
                         }
                         <span class="badge @badgeClass">
-                            @riskText Risk (@suspiciousCount flags)
+                            @riskText Risk (@suspiciousCount frame flags, @fsExitCount exits)
                         </span>
                     </td>
                     <td>

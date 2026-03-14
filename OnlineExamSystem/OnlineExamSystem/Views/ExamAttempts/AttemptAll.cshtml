@@ -261,6 +261,11 @@
             }
         });
 
+        let fullscreenExitCount = @Model.FullScreenExitCount;
+        const MAX_FULLSCREEN_EXITS = 3;
+        let isTrackingFullscreenExits = false;
+        let isExitingViaSubmit = false;
+
         function checkFullscreen() {
             const isFullscreen = document.fullscreenElement ||
                                  document.webkitIsFullScreen ||
@@ -270,10 +275,40 @@
             if (!isFullscreen) {
                 overlay.style.display = 'flex';
                 examContent.style.display = 'none';
+
+                if (isTrackingFullscreenExits && !isExitingViaSubmit && !isSubmitting) {
+                    logFullScreenExit();
+                }
             } else {
                 overlay.style.display = 'none';
                 examContent.style.display = 'block';
+                isTrackingFullscreenExits = true;
             }
+        }
+
+        function logFullScreenExit() {
+            fetch(`/ExamAttempts/LogFullScreenExit?attemptId=@Model.Id`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    fullscreenExitCount = data.exitCount;
+                    
+                    if (fullscreenExitCount >= MAX_FULLSCREEN_EXITS) {
+                        alert(`WARNING: You have exited full-screen mode ${fullscreenExitCount} times. This exceeds the maximum allowed limit of ${MAX_FULLSCREEN_EXITS}. Your exam will now be automatically submitted.`);
+                        isSubmitting = true;
+                        isExitingViaSubmit = true;
+                        document.getElementById('examForm').submit();
+                    } else {
+                        alert(`WARNING: You have exited full-screen mode. This is exit ${fullscreenExitCount} of ${MAX_FULLSCREEN_EXITS}. Your exam will be automatically submitted if you reach the limit.`);
+                    }
+                }
+            })
+            .catch(err => console.error("Error logging fullscreen exit"));
         }
 
         document.addEventListener('fullscreenchange', checkFullscreen);

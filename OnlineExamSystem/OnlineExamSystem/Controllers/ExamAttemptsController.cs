@@ -471,6 +471,51 @@ namespace OnlineExamSystem.Controllers
         }
 
         // -------------------------------
+        // PROCTORING: LOG FULL SCREEN EXIT
+        // -------------------------------
+        [HttpPost]
+        public IActionResult LogFullScreenExit(int attemptId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
+                return Unauthorized(new { message = "User not authenticated." });
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized(new { message = "Invalid user." });
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized(new { message = "Student not found or tenant mismatch." });
+
+            var attempt = _context.ExamAttempts
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId
+                );
+
+            if (attempt == null)
+                return Unauthorized(new { message = "Attempt not found or permission denied." });
+
+            if (attempt.EndTime != null)
+                return BadRequest(new { message = "Exam already submitted." });
+
+            attempt.FullScreenExitCount++;
+            _context.SaveChanges();
+
+            return Ok(new { success = true, exitCount = attempt.FullScreenExitCount });
+        }
+
+        // -------------------------------
         // PROCTORING: CAPTURE IMAGE
         // -------------------------------
         [HttpPost]

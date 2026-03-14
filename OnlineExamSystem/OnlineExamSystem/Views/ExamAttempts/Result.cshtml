@@ -37,26 +37,36 @@
                 var multipleFaceCount = suspiciousLogs.Count(l => l.SuspiciousReason.Contains("Multiple faces"));
 
                 <div class="row text-center mt-3">
-                    <div class="col-md-6 mb-3">
-                        <div class="card bg-light border-warning h-100">
-                            <div class="card-body">
-                                <h1 class="display-4 text-warning">@noFaceCount</h1>
-                                <p class="lead mb-0 text-muted">
-                                    @(noFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>No Face Detected</strong>
-                                </p>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light border-warning h-100">
+                                <div class="card-body">
+                                    <h1 class="display-4 text-warning">@noFaceCount</h1>
+                                    <p class="lead mb-0 text-muted">
+                                        @(noFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>No Face Detected</strong>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="card bg-light border-danger h-100">
-                            <div class="card-body">
-                                <h1 class="display-4 text-danger">@multipleFaceCount</h1>
-                                <p class="lead mb-0 text-muted">
-                                    @(multipleFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>Multiple Faces Detected</strong>
-                                </p>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light border-danger h-100">
+                                <div class="card-body">
+                                    <h1 class="display-4 text-danger">@multipleFaceCount</h1>
+                                    <p class="lead mb-0 text-muted">
+                                        @(multipleFaceCount == 1 ? "Frame" : "Frames") with <br/><strong>Multiple Faces Detected</strong>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light border-primary h-100">
+                                <div class="card-body">
+                                    <h1 class="display-4 text-primary">@Model.FullScreenExitCount</h1>
+                                    <p class="lead mb-0 text-muted">
+                                        @(Model.FullScreenExitCount == 1 ? "Time" : "Times") Student <br/><strong>Exited Fullscreen</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                 </div>
             }
             else

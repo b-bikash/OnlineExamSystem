@@ -27,5 +27,7 @@ namespace OnlineExamSystem.Models
         public List<Option> Options { get; set; }
 
         public int? SelectedOptionId { get; set; }
+
+        public int FullScreenExitCount { get; set; }
     }
 }
