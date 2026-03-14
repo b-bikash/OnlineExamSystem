@@ -30,5 +30,7 @@ namespace OnlineExamSystem.Models
         
         // Phase 1/2: Proctoring Logs
         public ICollection<ExamProctorLog> ExamProctorLogs { get; set; }
+
+        public int FullScreenExitCount { get; set; } = 0;
     }
 }

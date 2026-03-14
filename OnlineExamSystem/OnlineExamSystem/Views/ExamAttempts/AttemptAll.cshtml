@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Attempt Exam";
+    ViewData["HideNavbar"] = true;
     var questionIndex = 1;
 
     var designatedEndTime = Model.StartTime.AddMinutes(Model.Exam.DurationInMinutes);
