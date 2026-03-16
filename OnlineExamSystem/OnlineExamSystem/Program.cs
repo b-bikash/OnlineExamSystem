@@ -39,30 +39,32 @@ var app = builder.Build();
 // =====================================================
 // 🔐 ADMIN SEEDING (HASH-AWARE, SAFE)
 // =====================================================
-using (var scope = app.Services.CreateScope())
+
+if (app.Environment.IsDevelopment())
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    // Ensure DB exists (dev-safe)
-    //context.Database.EnsureCreated();
-
-    // Seed Admin only if none exists
-    if (!context.Users.Any(u => u.Role == "Admin"))
+    using (var scope = app.Services.CreateScope())
     {
-        var adminPassword = "Admin@123";
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        context.Users.Add(new User
+        // Seed Admin only if none exists
+        if (!context.Users.Any(u => u.Role == "Admin"))
         {
-            Username = "admin",
-            Email = "admin@exam.com",
-            PasswordHash = PasswordHelper.HashPassword(adminPassword),
-            Role = "Admin",
-            IsActive = true
-        });
+            var adminPassword = "Admin@123";
 
-        context.SaveChanges();
+            context.Users.Add(new User
+            {
+                Username = "admin",
+                Email = "admin@exam.com",
+                PasswordHash = PasswordHelper.HashPassword(adminPassword),
+                Role = "Admin",
+                IsActive = true
+            });
+
+            context.SaveChanges();
+        }
     }
 }
+
 
 // ---------------- PIPELINE ----------------
 
