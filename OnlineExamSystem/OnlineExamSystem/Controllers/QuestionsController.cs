@@ -79,14 +79,14 @@ namespace OnlineExamSystem.Controllers
             var collegeId = HttpContext.Session.GetInt32("CollegeId");
             var role = HttpContext.Session.GetString("Role");
 
-            if (collegeId == null || (role != "Teacher" && role != "TeacherAdmin" && role != "Admin"))
+            if (role != "Teacher" && role != "TeacherAdmin" && role != "Admin")
                 return Unauthorized();
 
             var exam = _context.Exams
                 .AsNoTracking()
                 .FirstOrDefault(e =>
                     e.Id == examId &&
-                    (role == "Admin" || e.CollegeId == collegeId.Value)
+                    (role == "Admin" || (collegeId != null && e.CollegeId == collegeId.Value))
                 );
 
             if (exam == null)
@@ -97,13 +97,13 @@ namespace OnlineExamSystem.Controllers
                 .Include(q => q.Options)
                 .ToList();
 
-            ViewBag.Breadcrumbs = new List<BreadcrumbItem>
+            /*ViewBag.Breadcrumbs = new List<BreadcrumbItem>
             {
                 new BreadcrumbItem { Text = "Dashboard", Url = Url.Action("Index", "Dashboard") },
                 new BreadcrumbItem { Text = "Exams", Url = Url.Action("Index", "Exams") },
                 new BreadcrumbItem { Text = exam.Title, Url = Url.Action("Index", "Exams") },
                 new BreadcrumbItem { Text = "Questions", IsActive = true }
-            };
+            };*/
 
             ViewBag.ExamId = examId;
             return View(questions);

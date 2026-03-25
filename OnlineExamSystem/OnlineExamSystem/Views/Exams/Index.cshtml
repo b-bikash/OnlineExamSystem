@@ -289,6 +289,10 @@
                         <th>Teacher</th>
                         <th>College</th>
                     }
+                    @if (role == "TeacherAdmin")
+                    {
+                        <th>Teacher</th>
+                    }
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -301,29 +305,46 @@
                         <td>@exam.Subject?.Name</td>
                         <td>@exam.TotalMarks</td>
 
-                        @if (role == "Admin")
+                        @if (role == "Admin" || role == "TeacherAdmin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
-                            <td>
-                                <span class="badge bg-info text-dark">
-                                    @exam.College?.Name
-                                </span>
-                            </td>
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @exam.College?.Name
+                                    </span>
+                                </td>
+                            }
+                            
                         }
 
-                        <td>
-                            <a asp-action="Edit"
-                               asp-route-id="@exam.Id"
-                               class="btn btn-sm btn-warning">Edit</a>
+                        <td style="white-space: nowrap;">
+                            <div class="btn-group" role="group">
 
-                            <a asp-controller="Questions"
-                               asp-action="Index"
-                               asp-route-examId="@exam.Id"
-                               class="btn btn-sm btn-info">Questions</a>
+                                <a asp-action="Edit"
+                                       asp-route-id="@exam.Id"
+                                       class="btn btn-sm btn-warning"
+                                       title="Edit Exam">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
 
-                            <a asp-action="Assign"
-                               asp-route-id="@exam.Id"
-                               class="btn btn-sm btn-secondary">Schedule</a>
+                                <a asp-controller="Questions"
+                                       asp-action="Index"
+                                       asp-route-examId="@exam.Id"
+                                       class="btn btn-sm btn-info"
+                                       title="View Questions">
+                                    <i class="bi bi-list"></i>
+                                </a>
+
+                                <a asp-action="Assign"
+                                       asp-route-id="@exam.Id"
+                                       class="btn btn-sm btn-secondary"
+                                       title="Schedule Exam">
+                                    <i class="bi bi-calendar"></i>
+                                </a>
+
+                            </div>
                         </td>
                     </tr>
                 }
@@ -350,6 +371,10 @@
                         <th>Teacher</th>
                         <th>College</th>
                     }
+                    @if (role == "TeacherAdmin")
+                    {
+                        <th>Teacher</th>
+                    }
                     <th>Ends At</th>
                     <th>Actions</th>
                 </tr>
@@ -362,14 +387,18 @@
                         <td>@exam.Description</td>
                         <td>@exam.Subject?.Name</td>
                         <td>@exam.TotalMarks</td>
-                        @if (role == "Admin")
+                        @if (role == "Admin" || role == "TeacherAdmin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
-                            <td>
-                                <span class="badge bg-info text-dark">
-                                    @exam.College?.Name
-                                </span>
-                            </td>
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @exam.College?.Name
+                                    </span>
+                                </td>
+                            }
+                            
                         }
                         <td>@exam.EndDateTime</td>
                         <td>
@@ -402,6 +431,10 @@
                         <th>Teacher</th>
                         <th>College</th>
                     }
+                    @if (role == "TeacherAdmin")
+                    {
+                        <th>Teacher</th>
+                    }
                     <th>Starts At</th>
                     <th>Actions</th>
                 </tr>
@@ -414,14 +447,18 @@
                         <td>@exam.Description</td>
                         <td>@exam.Subject?.Name</td>
                         <td>@exam.TotalMarks</td>
-                        @if (role == "Admin")
+                        @if (role == "Admin" || role == "TeacherAdmin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
-                            <td>
-                                <span class="badge bg-info text-dark">
-                                    @exam.College?.Name
-                                </span>
-                            </td>
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @exam.College?.Name
+                                    </span>
+                                </td>
+                            }
+                            
                         }
                         <td>@exam.StartDateTime</td>
                         <td>
@@ -453,6 +490,11 @@
                     @if (role == "Admin")
                     {
                         <th>Teacher</th>
+                        <th>College</th>
+                    }
+                    @if (role == "TeacherAdmin")
+                    {
+                        <th>Teacher</th>
                     }
                     <th>Finished At</th>
                     <th>Actions</th>
@@ -466,9 +508,18 @@
                         <td>@exam.Description</td>
                         <td>@exam.Subject?.Name</td>
                         <td>@exam.TotalMarks</td>
-                        @if (role == "Admin")
+                        @if (role == "Admin" || role == "TeacherAdmin")
                         {
                             <td>@exam.CreatedByTeacher?.Name</td>
+                            @if (role == "Admin")
+                            {
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        @exam.College?.Name
+                                    </span>
+                                </td>
+                            }
+                            
                         }
                         <td>@exam.EndDateTime</td>
                         <td>

@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Demo Data";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Demo Data Generator</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    <div class="card p-4 shadow-sm">
+        <h5>Generate Sample Data for Demo</h5>
+        <p class="text-muted">
+            This will create colleges, teachers, students, courses, subjects, exams, questions, and options.
+        </p>
+
+        <form method="post" asp-action="Generate">
+            <button type="submit" class="btn btn-primary">
+                Generate Demo Data
+            </button>
+        </form>
+    </div>
+</div>

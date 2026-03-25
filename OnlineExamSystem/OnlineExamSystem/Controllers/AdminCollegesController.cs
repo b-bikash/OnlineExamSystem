@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OnlineExamSystem.Models;
+using OnlineExamSystem.Services.AdminCleanup;
 
 namespace OnlineExamSystem.Controllers
 {
@@ -8,9 +9,11 @@ namespace OnlineExamSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public AdminCollegesController(ApplicationDbContext context)
+        private readonly IAdminCleanupService _adminCleanupService; 
+        public AdminCollegesController(ApplicationDbContext context, IAdminCleanupService adminCleanupService)
         {
             _context = context;
+            _adminCleanupService = adminCleanupService;
         }
 
         // GET: AdminColleges + SEARCH
@@ -204,6 +207,36 @@ namespace OnlineExamSystem.Controllers
             _context.SaveChanges();
 
             TempData["Success"] = "College deleted successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        //HARD DELETE Action (with confirmation)
+        [HttpPost]
+        public async Task<IActionResult> HardDelete(int id, string confirmText)
+        {
+            var role = HttpContext.Session.GetString("Role");
+
+            if (role != "Admin")
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            if (confirmText != "DELETE")
+            {
+                TempData["Error"] = "Please type DELETE to confirm.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var college = _context.Colleges.FirstOrDefault(c => c.Id == id);
+
+            if (college == null)
+            {
+                return NotFound();
+            }
+
+            await _adminCleanupService.DeleteCollegeCompletelyAsync(id);
+
+            TempData["Success"] = "College and all related data permanently deleted.";
             return RedirectToAction(nameof(Index));
         }
     }

@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Helpers;
 using OnlineExamSystem.Models;
+using OnlineExamSystem.Services.AdminCleanup;
+using OnlineExamSystem.Services.DemoData;
 using OnlineExamSystem.Services.ImportExport;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +15,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<AdminAuthorizeFilter>();
 builder.Services.AddScoped<SessionValidationFilter>();
 builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IAdminCleanupService, AdminCleanupService>();
+builder.Services.AddScoped<IDemoDataSeederService, DemoDataSeederService>();
 
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
