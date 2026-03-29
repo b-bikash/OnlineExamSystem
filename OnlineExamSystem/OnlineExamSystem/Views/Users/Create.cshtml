@@ -4,83 +4,90 @@
     ViewData["Title"] = "Create User";
 }
 
-<h2 class="mb-4">Create New User</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-<div class="card shadow-sm border-0">
-    <div class="card-body">
+            <h3 class="text-center mb-3">Create User</h3>
+            <p class="text-center text-muted mb-4">Add a new user to the system</p>
 
-        @if (ViewBag.Error != null)
-        {
-            <div class="alert alert-danger">
-                @ViewBag.Error
-            </div>
-        }
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger">
+                    @ViewBag.Error
+                </div>
+            }
 
-        <form asp-controller="Users" asp-action="Create" method="post">
-            @Html.AntiForgeryToken()
+            <form asp-controller="Users" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
 
-            <!-- ROLE -->
-            <div class="mb-3">
-                <label class="form-label">Role</label>
-                <select asp-for="Role" id="roleSelect" class="form-select" required>
-                    <option value="">-- Select Role --</option>
-                    <option value="Student">Student</option>
-                    <option value="Teacher">Teacher</option>
-                    <option value="TeacherAdmin">Teacher Admin</option>
-                    <option value="Admin">Admin</option>
-                </select>
-            </div>
+                <!-- ROLE -->
+                <div class="mb-3">
+                    <label class="form-label">Role</label>
+                    <select asp-for="Role" id="roleSelect" class="form-select" required>
+                        <option value="">Select Role</option>
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="TeacherAdmin">Teacher Admin</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
 
-            <!-- COLLEGE -->
-            <div class="mb-3" id="collegeWrapper">
-                <label class="form-label">College</label>
-                <select asp-for="CollegeId"
-                        id="collegeSelect"
-                        class="form-select"
-                        asp-items="@(new SelectList(ViewBag.Colleges, "Id", "Name"))">
-                    <option value="">-- Select College --</option>
-                </select>
+                <!-- COLLEGE -->
+                <div class="mb-3" id="collegeWrapper">
+                    <label class="form-label">College</label>
+                    <select asp-for="CollegeId"
+                            id="collegeSelect"
+                            class="form-select"
+                            asp-items="@(new SelectList(ViewBag.Colleges, "Id", "Name"))">
+                        <option value="">Select College</option>
+                    </select>
 
-                <span class="text-danger" id="collegeValidation" style="display:none;">
-                    College is required for this role.
-                </span>
-            </div>
+                    <span class="text-danger" id="collegeValidation" style="display:none;">
+                        College is required for this role.
+                    </span>
+                </div>
 
-            <!-- FULL NAME -->
-            <div class="mb-3" id="fullNameWrapper">
-                <label class="form-label">Full Name</label>
-                <input name="FullName"
-                       id="fullNameInput"
-                       class="form-control" />
-            </div>
+                <!-- FULL NAME -->
+                <div class="mb-3" id="fullNameWrapper">
+                    <label class="form-label">Full Name</label>
+                    <input name="FullName"
+                           id="fullNameInput"
+                           class="form-control"
+                           placeholder="Enter full name" />
+                </div>
 
-            <!-- USERNAME -->
-            <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input asp-for="Username" class="form-control" required />
-            </div>
+                <!-- USERNAME -->
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input asp-for="Username" class="form-control" placeholder="Enter username" required />
+                </div>
 
-            <!-- EMAIL -->
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input asp-for="Email" type="email" class="form-control" required />
-            </div>
+                <!-- EMAIL -->
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input asp-for="Email" type="email" class="form-control" placeholder="Enter email" required />
+                </div>
 
-            <!-- PASSWORD -->
-            <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input name="Password" type="password" class="form-control" required />
-            </div>
+                <!-- PASSWORD -->
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input name="Password" type="password" class="form-control" placeholder="Enter password" required />
+                </div>
 
-            <button type="submit" class="btn btn-primary">
-                Create User
-            </button>
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
 
-            <a asp-action="Index" class="btn btn-secondary ms-2">
-                Cancel
-            </a>
+                    <button type="submit" class="btn btn-primary">
+                        Create User
+                    </button>
+                </div>
 
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 

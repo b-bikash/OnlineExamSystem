@@ -8,117 +8,128 @@
         Context.Request.Query.ContainsKey("edit");
 }
 
-<h2>Schedule Exam</h2>
-<hr />
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 550px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-<form asp-action="Assign" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="id" value="@Model.Id" />
+            <h3 class="text-center mb-3">Schedule Exam</h3>
+            <p class="text-center text-muted mb-4">Set exam timing and availability</p>
 
-    <!-- Exam title (read-only) -->
-    <div class="mb-3">
-        <label class="form-label">Exam</label>
-        <input type="text"
-               class="form-control"
-               value="@Model.Title"
-               disabled />
-    </div>
+            <form asp-action="Assign" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
 
-    <!-- Subject (read-only, context info) -->
-    <div class="mb-3">
-        <label class="form-label">Subject</label>
-        <input type="text"
-               class="form-control"
-               value="@Model.Subject?.Name"
-               disabled />
-    </div>
+                <!-- EXAM -->
+                <div class="mb-3">
+                    <label class="form-label">Exam</label>
+                    <input type="text"
+                           class="form-control"
+                           value="@Model.Title"
+                           readonly />
+                </div>
 
-    @{
-        var minTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
-    }
+                <!-- SUBJECT -->
+                <div class="mb-3">
+                    <label class="form-label">Subject</label>
+                    <input type="text"
+                           class="form-control"
+                           value="@Model.Subject?.Name"
+                           readonly />
+                </div>
 
-    <!-- Start time -->
-    <div class="mb-3">
-        <label class="form-label">Start Date & Time</label>
-        <input type="datetime-local"
-               id="startDateTime"
-               name="startDateTime"
-               class="form-control"
-               value="@(Model.StartDateTime.HasValue
-                    ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
-                    : "")"
-               min="@minTime"
-               @(isEditMode ? "" : "readonly")
-               required />
-    </div>
-
-    <!-- End time -->
-    <div class="mb-3">
-        <label class="form-label">End Date & Time</label>
-        <input type="datetime-local"
-               id="endDateTime"
-               name="endDateTime"
-               class="form-control"
-               value="@(Model.EndDateTime.HasValue
-                    ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
-                    : "")"
-               min="@minTime"
-               @(isEditMode ? "" : "readonly")
-               required />
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var startInput = document.getElementById('startDateTime');
-            var endInput = document.getElementById('endDateTime');
-
-            if (startInput && endInput) {
-                // Ensure min time is set for fresh page loads
-                var now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                var currentDateTime = now.toISOString().slice(0, 16);
-                
-                if (!startInput.value) {
-                    startInput.min = currentDateTime;
+                @{
+                    var minTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
                 }
 
-                // Update End Time min value when Start Time changes
-                startInput.addEventListener('change', function () {
-                    if (this.value) {
-                        endInput.min = this.value;
+                <!-- START TIME -->
+                <div class="mb-3">
+                    <label class="form-label">Start Date & Time</label>
+                    <input type="datetime-local"
+                           id="startDateTime"
+                           name="startDateTime"
+                           class="form-control"
+                           value="@(Model.StartDateTime.HasValue
+                                                                               ? Model.StartDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                                                                           : "")"
+                           min="@minTime"
+                    @(isEditMode ? "" : "readonly")
+                           required />
+                </div>
+
+                <!-- END TIME -->
+                <div class="mb-3">
+                    <label class="form-label">End Date & Time</label>
+                    <input type="datetime-local"
+                           id="endDateTime"
+                           name="endDateTime"
+                           class="form-control"
+                           value="@(Model.EndDateTime.HasValue
+                                                                               ? Model.EndDateTime.Value.ToString("yyyy-MM-ddTHH:mm")
+                                                                           : "")"
+                           min="@minTime"
+                    @(isEditMode ? "" : "readonly")
+                           required />
+                </div>
+
+                <!-- VALIDATION -->
+                <div class="text-danger mb-3">
+                    @Html.ValidationSummary()
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+
+                    @if (isEditMode)
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            @(Model.StartDateTime.HasValue ? "Update Schedule" : "Schedule Exam")
+                        </button>
                     }
-                });
-            }
-        });
-    </script>
+                    else
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            Back
+                        </a>
 
-    <!-- Validation -->
-    <div class="text-danger">
-        @Html.ValidationSummary()
+                        <a asp-action="Assign"
+                               asp-route-id="@Model.Id"
+                               asp-route-edit="true"
+                               class="btn btn-warning">
+                            Edit Schedule
+                        </a>
+                    }
+
+                </div>
+
+            </form>
+
+        </div>
     </div>
+</div>
 
-    <!-- Actions -->
-    @if (isEditMode)
-    {
-        <button type="submit" class="btn btn-primary">
-            @(Model.StartDateTime.HasValue ? "Update Schedule" : "Schedule Exam")
-        </button>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var startInput = document.getElementById('startDateTime');
+        var endInput = document.getElementById('endDateTime');
 
-        <a asp-action="Index" class="btn btn-secondary ms-2">
-            Cancel
-        </a>
-    }
-    else
-    {
-        <a asp-action="Assign"
-           asp-route-id="@Model.Id"
-           asp-route-edit="true"
-           class="btn btn-warning">
-            Edit Schedule
-        </a>
+        if (startInput && endInput) {
+            var now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            var currentDateTime = now.toISOString().slice(0, 16);
 
-        <a asp-action="Index" class="btn btn-secondary ms-2">
-            Back
-        </a>
-    }
-</form>
+            if (!startInput.value) {
+                startInput.min = currentDateTime;
+            }
+
+            startInput.addEventListener('change', function () {
+                if (this.value) {
+                    endInput.min = this.value;
+                }
+            });
+        }
+    });
+</script>

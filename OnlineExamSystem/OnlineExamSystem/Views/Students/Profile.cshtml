@@ -4,17 +4,38 @@
     ViewData["Title"] = "My Profile";
 }
 
-<h2>My Profile</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-<div class="card shadow-sm border-0">
-    <div class="card-body">
-        <p><strong>Full Name:</strong> @Model.Name</p>
-        <p><strong>Course:</strong> @Model.Course?.Name</p>
-        <p><strong>College:</strong> @Model.College?.Name</p>
-        <p><strong>Roll Number:</strong> @Model.RollNumber</p>
+            <h3 class="text-center mb-4">My Profile</h3>
 
-        <a asp-action="EditProfile" class="btn btn-warning">
-            Edit Profile
-        </a>
+            <!-- PROFILE DETAILS -->
+            <div class="mb-3">
+                <label class="text-muted small">Full Name</label>
+                <div class="fw-semibold">@Model.Name</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="text-muted small">Course</label>
+                <div class="fw-semibold">@Model.Course?.Name</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="text-muted small">College</label>
+                <div class="fw-semibold">@Model.College?.Name</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="text-muted small">Roll Number</label>
+                <div class="fw-semibold">@Model.RollNumber</div>
+            </div>
+
+            <!-- ACTION -->
+            <a asp-action="EditProfile" class="btn btn-warning w-100">
+                Edit Profile
+            </a>
+
+        </div>
     </div>
 </div>

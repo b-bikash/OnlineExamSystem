@@ -1,46 +1,59 @@
 @model OnlineExamSystem.Models.Subject
 
-<h3>Edit Subject</h3>
+@{
+    ViewData["Title"] = "Edit Subject";
+}
 
-<form method="post">
-    @Html.AntiForgeryToken()
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-    <!-- 🔴 Validation Summary -->
-    <div asp-validation-summary="All" class="text-danger"></div>
+            <h3 class="text-center mb-3">Edit Subject</h3>
+            <p class="text-center text-muted mb-4">Update subject details</p>
 
-    <!-- Hidden fields -->
-    <input type="hidden" asp-for="Id" />
-    <input type="hidden" asp-for="CollegeId" />
+            <form method="post">
+                @Html.AntiForgeryToken()
 
-    <!-- 🏷 Subject Code -->
-    <div class="mb-3">
-        <label class="form-label">Subject Code</label>
-        <input asp-for="Code"
-               class="form-control"
-               placeholder="e.g. CS101, MTH201" />
-        <span asp-validation-for="Code"
-              class="text-danger"></span>
+                <!-- VALIDATION -->
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <!-- HIDDEN -->
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="CollegeId" />
+
+                <!-- SUBJECT CODE -->
+                <div class="mb-3">
+                    <label class="form-label">Subject Code</label>
+                    <input asp-for="Code"
+                           class="form-control"
+                           placeholder="e.g. CS101, MTH201" />
+                    <span asp-validation-for="Code" class="text-danger"></span>
+                </div>
+
+                <!-- SUBJECT NAME -->
+                <div class="mb-3">
+                    <label class="form-label">Subject Name</label>
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="e.g. AI & ML, C++, Data Science" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
     </div>
-
-    <!-- 📘 Subject Name -->
-    <div class="mb-3">
-        <label class="form-label">Subject Name</label>
-        <input asp-for="Name"
-               class="form-control"
-               placeholder="e.g. AI & ML, C++, Data-Science" />
-        <span asp-validation-for="Name"
-              class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">
-        Save Changes
-    </button>
-
-    <a asp-action="Index"
-       class="btn btn-secondary ms-2">
-        Cancel
-    </a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

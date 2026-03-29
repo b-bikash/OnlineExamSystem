@@ -17,6 +17,8 @@ builder.Services.AddScoped<SessionValidationFilter>();
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<IAdminCleanupService, AdminCleanupService>();
 builder.Services.AddScoped<IDemoDataSeederService, DemoDataSeederService>();
+builder.Services.AddScoped<IQuestionImportService, QuestionImportService>();
+builder.Services.AddScoped<OnlineExamSystem.Services.Email.IEmailService, OnlineExamSystem.Services.Email.EmailService>();
 
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

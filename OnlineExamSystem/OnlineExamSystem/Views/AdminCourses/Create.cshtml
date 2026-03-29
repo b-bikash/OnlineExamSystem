@@ -7,49 +7,63 @@
     var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
 }
 
-<h2 class="mb-4">Add Course</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-<form asp-action="Create" method="post">
+            <h3 class="text-center mb-3">Add Course</h3>
+            <p class="text-center text-muted mb-4">Create a new course</p>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <div asp-validation-summary="All" class="text-danger"></div>
-            @if (role == "Admin")
-            {
+            <form asp-action="Create" method="post">
+
+                <!-- VALIDATION -->
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <!-- COLLEGE (Admin Only) -->
+                @if (role == "Admin")
+                {
+                    <div class="mb-3">
+                        <label asp-for="CollegeId" class="form-label"></label>
+
+                        <select asp-for="CollegeId" class="form-select">
+                            <option value="">Select College</option>
+                            @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
+                            {
+                                <option value="@college.Id">
+                                    @college.Name
+                                </option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="CollegeId" class="text-danger"></span>
+                    </div>
+                }
+
+                <!-- COURSE NAME -->
                 <div class="mb-3">
-                    <label asp-for="CollegeId" class="form-label"></label>
-
-                    <select asp-for="CollegeId" class="form-select">
-                        <option value="">-- Select College --</option>
-                        @foreach (var college in colleges ?? new List<OnlineExamSystem.Models.College>())
-                        {
-                            <option value="@college.Id">
-                                @college.Name
-                            </option>
-                        }
-                    </select>
-
-                    <span asp-validation-for="CollegeId" class="text-danger"></span>
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="Enter course name" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
-            }
 
-            <div class="mb-3">
-                <label asp-for="Name" class="form-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
 
-            <button type="submit" class="btn btn-primary">
-                Save
-            </button>
+                    <button type="submit" class="btn btn-primary">
+                        Save Course
+                    </button>
+                </div>
 
-            <a asp-action="Index" class="btn btn-secondary ms-2">
-                Cancel
-            </a>
+            </form>
 
         </div>
     </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -444,5 +444,60 @@ namespace OnlineExamSystem.Controllers
             TempData["SuccessMessage"] = "Question deleted successfully.";
             return RedirectToAction("Index", new { examId });
         }
+
+        // -------------------------------
+        // BULK DELETE (POST)
+        // -------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult BulkDelete(int examId, List<int> questionIds)
+        {
+            if (questionIds == null || !questionIds.Any())
+            {
+                TempData["ErrorMessage"] = "No questions selected for deletion.";
+                return RedirectToAction("Index", new { examId });
+            }
+
+            var exam = _context.Exams.FirstOrDefault(e => e.Id == examId);
+            if (exam == null || !HasExamAccess(exam))
+                return Unauthorized();
+
+            // 🔒 FAIRNESS RULE
+            bool examAttempted = _context.ExamAttempts.Any(ea => ea.ExamId == examId);
+
+            if (examAttempted)
+            {
+                TempData["ErrorMessage"] =
+                    "This exam has already been attempted. Questions cannot be deleted.";
+                return RedirectToAction("Index", new { examId });
+            }
+
+            var questions = _context.Questions
+                .Include(q => q.Options)
+                .Where(q => questionIds.Contains(q.Id) && q.ExamId == examId)
+                .ToList();
+
+            if (!questions.Any())
+            {
+                TempData["ErrorMessage"] = "No valid questions found.";
+                return RedirectToAction("Index", new { examId });
+            }
+
+            // Delete Options first (FK safety)
+            foreach (var q in questions)
+            {
+                _context.Options.RemoveRange(q.Options);
+            }
+
+            _context.Questions.RemoveRange(questions);
+            _context.SaveChanges();
+
+            // Recalculate marks
+            RecalculateExamTotalMarks(examId);
+
+            TempData["SuccessMessage"] = $"{questions.Count} question(s) deleted successfully.";
+
+            return RedirectToAction("Index", new { examId });
+        }
     }
 }

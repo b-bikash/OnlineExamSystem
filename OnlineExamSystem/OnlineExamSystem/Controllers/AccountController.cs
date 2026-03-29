@@ -2,16 +2,20 @@
 using OnlineExamSystem.Helpers;
 using OnlineExamSystem.Models;
 using System.Linq;
+using OnlineExamSystem.Services.Email;
+using System.Threading.Tasks;
 
 namespace OnlineExamSystem.Controllers
 {
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         // =========================
@@ -31,11 +35,11 @@ namespace OnlineExamSystem.Controllers
                 ViewBag.Error = "Please enter username/email and password.";
                 return View();
             }
-
+            usernameOrEmail = usernameOrEmail.Trim().ToLower();
             var hashedPassword = PasswordHelper.HashPassword(password);
 
             var user = _context.Users.FirstOrDefault(u =>
-                (u.Username == usernameOrEmail || u.Email == usernameOrEmail)
+                (u.Username.ToLower() == usernameOrEmail || u.Email.ToLower() == usernameOrEmail)
                 && u.PasswordHash == hashedPassword
                 && u.IsActive
             );
@@ -110,11 +114,11 @@ public IActionResult Register(RegisterViewModel model)
         ViewBag.Colleges = _context.Colleges.ToList();
         return View(model);
     }
+            model.Email = model.Email.Trim().ToLower();
+            var existingUser = _context.Users
+                .FirstOrDefault(u => u.Email.ToLower() == model.Email);
 
-    var existingUser = _context.Users
-        .FirstOrDefault(u => u.Email == model.Email);
-
-    if (existingUser != null)
+            if (existingUser != null)
     {
         ModelState.AddModelError("", "Email already registered.");
         ViewBag.Colleges = _context.Colleges.ToList();
@@ -129,7 +133,7 @@ public IActionResult Register(RegisterViewModel model)
                 var user = new User
                 {
                     Username = model.Username,
-                    Email = model.Email,
+                    Email = model.Email.ToLower(),
                     PasswordHash = PasswordHelper.HashPassword(model.Password),
                     Role = model.Role,
                     CollegeId = model.Role == "Admin" ? null : model.CollegeId,
@@ -186,8 +190,123 @@ public IActionResult Register(RegisterViewModel model)
         return View(model);
     }
 }
+        // =========================
+        // FORGOT PASSWORD
+        // =========================
 
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
 
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(OnlineExamSystem.Models.ViewModels.ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var email = model.Email.Trim().ToLower();
+
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email.ToLower() == email && u.IsActive);
+
+            // ⚠️ IMPORTANT: Do NOT reveal if user exists or not
+            if (user != null)
+            {
+                // 🔐 Generate raw token
+                var token = Guid.NewGuid().ToString();
+
+                // 🔒 Hash token before storing
+                var hashedToken = PasswordHelper.HashPassword(token);
+
+                user.PasswordResetToken = hashedToken;
+                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(30);
+
+                _context.SaveChanges();
+
+                // 🔗 Build reset link
+                var resetLink = Url.Action(
+                    "ResetPassword",
+                    "Account",
+                    new { token = token },
+                    Request.Scheme
+                );
+
+                // 📧 Email content
+                var subject = "Reset Your Password";
+                var body = $@"
+        <p>Hello {user.Username},</p>
+        <p>Click the link below to reset your password:</p>
+        <p><a href='{resetLink}'>Reset Password</a></p>
+        <p>This link will expire in 30 minutes.</p>
+    ";
+
+                // 📤 Send email
+                await _emailService.SendEmailAsync(user.Email, subject, body);
+            }
+
+            ViewBag.Message = "If an account with this email exists, a password reset link will be sent.";
+
+            return View();
+        }
+        // =========================
+        // RESET PASSWORD
+        // =========================
+
+        [HttpGet]
+        public IActionResult ResetPassword(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var model = new OnlineExamSystem.Models.ViewModels.ResetPasswordViewModel
+            {
+                Token = token
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public IActionResult ResetPassword(OnlineExamSystem.Models.ViewModels.ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // 🔒 Hash incoming token
+            var hashedToken = PasswordHelper.HashPassword(model.Token);
+
+            var user = _context.Users.FirstOrDefault(u =>
+                u.PasswordResetToken == hashedToken &&
+                u.PasswordResetTokenExpiry > DateTime.UtcNow
+            );
+
+            if (user == null)
+            {
+                ModelState.AddModelError("", "Invalid or expired token.");
+                return View(model);
+            }
+
+            // 🔐 Update password
+            user.PasswordHash = PasswordHelper.HashPassword(model.NewPassword);
+
+            // 🧹 Clear token
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiry = null;
+
+            _context.SaveChanges();
+
+            TempData["Success"] = "Password reset successful. Please login.";
+
+            return RedirectToAction("Login");
+        }
         // =========================
         // LOGOUT
         // =========================

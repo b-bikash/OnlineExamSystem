@@ -1,35 +1,65 @@
 @model OnlineExamSystem.Models.Exam
 
-<h2>Edit Exam</h2>
+@{
+    ViewData["Title"] = "Edit Exam";
+}
 
-<form action="/Exams/Edit/@Model.Id" method="post">
-    @Html.AntiForgeryToken()
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 550px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-    <input type="hidden" name="Id" value="@Model.Id" />
+            <h3 class="text-center mb-3">Edit Exam</h3>
+            <p class="text-center text-muted mb-4">Update exam details</p>
 
-    <div class="mb-3">
-        <label>Title</label>
-        <input class="form-control" name="Title" value="@Model.Title" required />
+            <form action="/Exams/Edit/@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="Id" value="@Model.Id" />
+
+                <!-- TITLE -->
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input class="form-control"
+                           name="Title"
+                           value="@Model.Title"
+                           placeholder="Enter exam title"
+                           required />
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control"
+                              name="Description"
+                              rows="3"
+                              placeholder="Enter exam description">@Model.Description</textarea>
+                </div>
+
+                <!-- DURATION -->
+                <div class="mb-3">
+                    <label class="form-label">Duration (Minutes)</label>
+                    <input class="form-control"
+                           name="DurationInMinutes"
+                           type="number"
+                           min="1"
+                           value="@Model.DurationInMinutes"
+                           placeholder="Enter duration"
+                           required />
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/Exams" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        Update Exam
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label>Description</label>
-        <textarea class="form-control" name="Description">@Model.Description</textarea>
-    </div>
-
-    <div class="mb-3">
-        <label>Duration In Minutes</label>
-        <input class="form-control"
-               name="DurationInMinutes"
-               type="number"
-               min="1"
-               value="@Model.DurationInMinutes"
-               required />
-    </div>
-
-    @* TotalMarks intentionally removed
-       This is now system-calculated from question marks *@
-
-    <button type="submit" class="btn btn-primary">Update</button>
-    <a href="/Exams" class="btn btn-secondary">Cancel</a>
-</form>
+</div>

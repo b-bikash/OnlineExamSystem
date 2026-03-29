@@ -6,63 +6,74 @@
     var colleges = ViewBag.Colleges as List<OnlineExamSystem.Models.College>;
 }
 
-<h2 class="mb-4">Add Subject</h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px; border-radius: 12px;">
+        <div class="card-body p-4">
 
-<form asp-action="Create" method="post">
-    @Html.AntiForgeryToken()
+            <h3 class="text-center mb-3">Add Subject</h3>
+            <p class="text-center text-muted mb-4">Create a new subject</p>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
 
-            <!-- 🔴 Validation Summary -->
-            <div asp-validation-summary="All" class="text-danger"></div>
+                <!-- VALIDATION -->
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-            <!-- 🏫 College Dropdown (Admin Only) -->
-            @if (role == "Admin")
-            {
-                <div class="mb-3">
-                    <label class="form-label">College</label>
-                    <select asp-for="CollegeId" class="form-select" required>
-                        <option value="">-- Select College --</option>
-                        @if (colleges != null)
-                        {
-                            foreach (var college in colleges)
+                <!-- COLLEGE (Admin Only) -->
+                @if (role == "Admin")
+                {
+                    <div class="mb-3">
+                        <label class="form-label">College</label>
+                        <select asp-for="CollegeId" class="form-select" required>
+                            <option value="">Select College</option>
+                            @if (colleges != null)
                             {
-                                <option value="@college.Id">
-                                    @college.Name
-                                </option>
+                                foreach (var college in colleges)
+                                {
+                                    <option value="@college.Id">
+                                        @college.Name
+                                    </option>
+                                }
                             }
-                        }
-                    </select>
-                    <span asp-validation-for="CollegeId" class="text-danger"></span>
+                        </select>
+                        <span asp-validation-for="CollegeId" class="text-danger"></span>
+                    </div>
+                }
+
+                <!-- SUBJECT NAME -->
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="Enter subject name" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
-            }
 
-            <!-- 📘 Subject Name -->
-            <div class="mb-3">
-                <label asp-for="Name" class="form-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
+                <!-- SUBJECT CODE -->
+                <div class="mb-3">
+                    <label asp-for="Code" class="form-label"></label>
+                    <input asp-for="Code"
+                           class="form-control"
+                           placeholder="Enter subject code" />
+                    <span asp-validation-for="Code" class="text-danger"></span>
+                </div>
 
-            <!-- 🏷 Subject Code -->
-            <div class="mb-3">
-                <label asp-for="Code" class="form-label"></label>
-                <input asp-for="Code" class="form-control" />
-                <span asp-validation-for="Code" class="text-danger"></span>
-            </div>
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
 
-            <button type="submit" class="btn btn-primary">
-                Save
-            </button>
+                    <button type="submit" class="btn btn-primary">
+                        Save Subject
+                    </button>
+                </div>
 
-            <a asp-action="Index" class="btn btn-secondary ms-2">
-                Cancel
-            </a>
+            </form>
 
         </div>
     </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
