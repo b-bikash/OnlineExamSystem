@@ -386,6 +386,7 @@ namespace OnlineExamSystem.Controllers
                         .ThenInclude(q => q.Options)
                 .Include(a => a.StudentAnswers)
                 .Include(a => a.ExamProctorLogs) // 📸 For Proctoring Report
+                .Include(a => a.Student)
                 .AsNoTracking()
                 .FirstOrDefault(a => a.Id == attemptId);
 

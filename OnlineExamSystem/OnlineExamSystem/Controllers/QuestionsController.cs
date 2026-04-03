@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using System.Linq;
@@ -47,7 +47,7 @@ namespace OnlineExamSystem.Controllers
             var collegeId = HttpContext.Session.GetInt32("CollegeId");
 
             if (role == "Admin")
-                return true;
+                return false; // Admin is view-only
 
             if (collegeId == null)
                 return false;
@@ -119,6 +119,9 @@ namespace OnlineExamSystem.Controllers
             if (exam == null)
                 return NotFound();
 
+            if (!HasExamAccess(exam))
+                return Unauthorized();
+
             if (IsQuestionModificationLocked(exam))
             {
                 TempData["ErrorMessage"] =
@@ -149,6 +152,9 @@ namespace OnlineExamSystem.Controllers
             var exam = _context.Exams.FirstOrDefault(e => e.Id == model.ExamId);
             if (exam == null)
                 return NotFound();
+
+            if (!HasExamAccess(exam))
+                return Unauthorized();
 
             if (IsQuestionModificationLocked(exam))
             {
@@ -237,6 +243,9 @@ namespace OnlineExamSystem.Controllers
             if (exam == null)
                 return NotFound();
 
+            if (!HasExamAccess(exam))
+                return Unauthorized();
+
             ViewBag.Breadcrumbs = new List<BreadcrumbItem>
             {
                 new BreadcrumbItem { Text = "Dashboard", Url = Url.Action("Index", "Dashboard") },
@@ -307,6 +316,10 @@ namespace OnlineExamSystem.Controllers
 
             if (question == null)
                 return NotFound();
+
+            var exam = _context.Exams.FirstOrDefault(e => e.Id == question.ExamId);
+            if (exam == null || !HasExamAccess(exam))
+                return Unauthorized();
 
             // Fairness rule
             bool examAttempted = _context.ExamAttempts
@@ -402,6 +415,10 @@ namespace OnlineExamSystem.Controllers
 
             if (question == null)
                 return NotFound();
+
+            var exam = _context.Exams.FirstOrDefault(e => e.Id == question.ExamId);
+            if (exam == null || !HasExamAccess(exam))
+                return Unauthorized();
 
             return View(question);
         }

@@ -20,7 +20,6 @@ namespace OnlineExamSystem.Services.DemoData
 
         public async Task SeedAsync()
         {
-            // جلوگیری از دوباره‌سازی داده
             if (_context.Colleges.Any())
                 return;
 

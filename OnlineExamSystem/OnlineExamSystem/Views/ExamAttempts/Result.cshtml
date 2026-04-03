@@ -10,6 +10,11 @@
 
 <div>
     <p><strong>Exam Title:</strong> @Model.Exam.Title</p>
+    @if (Context.Session.GetString("Role") == "Teacher" || Context.Session.GetString("Role") == "Admin" || Context.Session.GetString("Role") == "TeacherAdmin")
+    {
+        <p><strong>Student Name:</strong> @Model.Student?.Name</p>
+        <p><strong>Roll Number:</strong> @Model.Student?.RollNumber</p>
+    }
     <p><strong>Start Time:</strong> @Model.StartTime</p>
     <p><strong>End Time:</strong> @Model.EndTime</p>
     <p><strong>Score:</strong> @Model.Score / @Model.Exam.TotalMarks</p>

@@ -1,9 +1,11 @@
-﻿@model IEnumerable<OnlineExamSystem.Models.Question>
+@model IEnumerable<OnlineExamSystem.Models.Question>
+@using Microsoft.AspNetCore.Http
 
 @{
     ViewData["Title"] = "Questions";
     var examTitle = Model.FirstOrDefault()?.Exam?.Title;
     var serialNo = 1;
+    var isAdmin = Context.Session.GetString("Role") == "Admin";
 }
 
 <!-- ================= BREADCRUMB ================= -->
@@ -45,17 +47,20 @@
             ← Back
         </a>
 
-        <a asp-action="Create"
-               asp-route-examId="@ViewBag.ExamId"
-               class="btn btn-primary">
-            Add Question
-        </a>
+        @if (!isAdmin)
+        {
+            <a asp-action="Create"
+                   asp-route-examId="@ViewBag.ExamId"
+                   class="btn btn-primary">
+                Add Question
+            </a>
 
-        <a href="https://ai-mcq-generator-325582779572.us-west1.run.app/"
-               target="_blank"
-               class="btn btn-info text-white">
-            Generate (AI)
-        </a>
+            <a href="https://ai-mcq-generator-325582779572.us-west1.run.app/"
+                   target="_blank"
+                   class="btn btn-info text-white">
+                Generate (AI)
+            </a>
+        }
 
         
 
@@ -63,32 +68,35 @@
 </div>
 
 <!-- ================= IMPORT SECTION (MOVED BELOW HEADER) ================= -->
-<div class="card mb-3">
-    <div class="card-body">
-        <form asp-controller="QuestionImport"
-              asp-action="Import"
-              method="post"
-              enctype="multipart/form-data"
-              class="d-flex align-items-center gap-2 flex-wrap">
+@if (!isAdmin)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <form asp-controller="QuestionImport"
+                  asp-action="Import"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="d-flex align-items-center gap-2 flex-wrap">
 
-            <input type="hidden" name="examId" value="@ViewBag.ExamId" />
+                <input type="hidden" name="examId" value="@ViewBag.ExamId" />
 
-            <input type="file"
-                   name="file"
-                   class="form-control"
-                   accept=".csv"
-                   required />
+                <input type="file"
+                       name="file"
+                       class="form-control"
+                       accept=".csv"
+                       required />
 
-            <button type="submit" class="btn btn-success">
-                Import
-            </button>
-        </form>
+                <button type="submit" class="btn btn-success">
+                    Import
+                </button>
+            </form>
 
-        <small class="text-muted">
-            Upload CSV to import questions. Click the “Generate (AI)” button to automatically create questions using AI, then download them as a CSV file.
-        </small>
+            <small class="text-muted">
+                Upload CSV to import questions. Click the “Generate (AI)” button to automatically create questions using AI, then download them as a CSV file.
+            </small>
+        </div>
     </div>
-</div>
+}
 
 <!-- ================= QUESTIONS TABLE ================= -->
 <form id="bulkDeleteForm"
@@ -98,23 +106,32 @@
     
     <input type="hidden" name="examId" value="@ViewBag.ExamId" />
     <!-- NEW MULTI DELETE BUTTON -->
-    <button type="submit"
-            id="btnDeleteSelected"
-            class="btn btn-danger"
-            onclick="return confirmBulkDelete()">
-        Delete Selected
-    </button>
+    @if (!isAdmin)
+    {
+        <button type="submit"
+                id="btnDeleteSelected"
+                class="btn btn-danger"
+                onclick="return confirmBulkDelete()">
+            Delete Selected
+        </button>
+    }
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th style="width: 40px;">
-                <input type="checkbox" id="selectAll" />
-            </th>
+            @if (!isAdmin)
+            {
+                <th style="width: 40px;">
+                    <input type="checkbox" id="selectAll" />
+                </th>
+            }
             <th style="width: 80px;">S.No</th>
             <th style="width: 100px;">Image</th>
             <th>Question</th>
             <th style="width: 100px;">Marks</th>
-            <th style="width: 160px;">Actions</th>
+            @if (!isAdmin)
+            {
+                <th style="width: 160px;">Actions</th>
+            }
         </tr>
     </thead>
 
@@ -122,9 +139,12 @@
         @foreach (var q in Model)
         {
             <tr>
-                <td>
-                        <input type="checkbox" class="questionCheckbox" name="questionIds" value="@q.Id" />
-                </td>
+                @if (!isAdmin)
+                {
+                    <td>
+                            <input type="checkbox" class="questionCheckbox" name="questionIds" value="@q.Id" />
+                    </td>
+                }
                 <td>@serialNo</td>
                 <td>
                     @if (!string.IsNullOrEmpty(q.ImageUrl))
@@ -138,19 +158,22 @@
                 </td>
                 <td>@q.Text</td>
                 <td>@q.Marks</td>
-                <td>
-                    <a asp-action="Edit"
-                       asp-route-id="@q.Id"
-                       class="btn btn-sm btn-warning">
-                        Edit
-                    </a>
+                @if (!isAdmin)
+                {
+                    <td>
+                        <a asp-action="Edit"
+                           asp-route-id="@q.Id"
+                           class="btn btn-sm btn-warning">
+                            Edit
+                        </a>
 
-                    <a asp-action="Delete"
-                       asp-route-id="@q.Id"
-                       class="btn btn-sm btn-danger ms-1">
-                        Delete
-                    </a>
-                </td>
+                        <a asp-action="Delete"
+                           asp-route-id="@q.Id"
+                           class="btn btn-sm btn-danger ms-1">
+                            Delete
+                        </a>
+                    </td>
+                }
             </tr>
 
             serialNo++;
