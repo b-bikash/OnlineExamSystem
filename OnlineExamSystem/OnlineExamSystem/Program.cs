@@ -55,12 +55,12 @@ var app = builder.Build();
         // Seed Admin only if none exists
         if (!context.Users.Any(u => u.Role == "Admin"))
         {
-            var adminPassword = "Admin@123";
+            var adminPassword = "";
 
             context.Users.Add(new User
             {
                 Username = "admin",
-                Email = "admin@exam.com",
+                Email = "",
                 PasswordHash = PasswordHelper.HashPassword(adminPassword),
                 Role = "Admin",
                 IsActive = true
