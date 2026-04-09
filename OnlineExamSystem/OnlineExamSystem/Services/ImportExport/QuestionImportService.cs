@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using System;
@@ -45,7 +45,7 @@ namespace OnlineExamSystem.Services.ImportExport
 
             // 🔒 FAIRNESS CHECK
             var hasAttempts = _context.ExamAttempts.Any(ea => ea.ExamId == examId);
-            var now = DateTime.Now;
+            var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
             var isLive = exam.StartDateTime.HasValue && exam.EndDateTime.HasValue &&
                          now >= exam.StartDateTime.Value && now <= exam.EndDateTime.Value;
 

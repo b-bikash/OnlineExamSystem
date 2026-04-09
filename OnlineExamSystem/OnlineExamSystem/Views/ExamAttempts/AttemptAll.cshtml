@@ -10,7 +10,7 @@
         ? Model.Exam.EndDateTime.Value
         : designatedEndTime;
 
-    int remainingSeconds = (int)(actualEndTime - DateTime.Now).TotalSeconds;
+    int remainingSeconds = (int)(actualEndTime - OnlineExamSystem.Helpers.TimeHelper.GetLocalTime()).TotalSeconds;
     if (remainingSeconds < 0) remainingSeconds = 0;
 }
 
@@ -138,9 +138,11 @@
 
                 @{
                     questionIndex = 1;
+                    var random = new Random(Model.Id);
+                    var randomizedQuestions = Model.Exam.Questions.OrderBy(q => random.Next()).ToList();
                 }
 
-                @foreach (var question in Model.Exam.Questions)
+                @foreach (var question in randomizedQuestions)
                 {
                     <div class="card mb-4 shadow-sm question-card"
                          id="question-@questionIndex"
@@ -163,6 +165,7 @@
                                            name="answers[@question.Id]"
                                            value="@option.Id"
                                            data-question="@questionIndex"
+                                           data-question-id="@question.Id"
                                            id="q@questionIndex_opt@option.Id"
                                            @(Model.StudentAnswers.Any(a =>
                                                                               a.QuestionId == question.Id &&
@@ -319,6 +322,25 @@
         // Initial check
         checkFullscreen();
 
+        // Tab Switch Logic
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden && !isSubmitting && !isExitingViaSubmit) {
+                fetch(`/ExamAttempts/LogTabSwitch?attemptId=@Model.Id`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`WARNING: You have switched tabs. This violation has been logged.`);
+                    }
+                })
+                .catch(err => console.error("Error logging tab switch"));
+            }
+        });
+
         // Webcam & Face AI Logic
         const video = document.getElementById('webcam-video');
         const canvas = document.getElementById('webcam-canvas');
@@ -456,15 +478,34 @@
             });
         });
 
-        // Update answered state
+        // Update answered state and trigger background save
         document.querySelectorAll("input[type='radio']").forEach(radio => {
             radio.addEventListener("change", () => {
                 const index = radio.getAttribute("data-question");
+                const questionId = radio.getAttribute("data-question-id");
+                const selectedOptionId = radio.value;
+                const attemptId = '@Model.Id';
+
                 const badge = document.querySelector(
                     `.question-number[data-question='${index}']`
                 );
                 badge.classList.remove("unanswered");
                 badge.classList.add("answered");
+
+                // Background AJAX save
+                const formData = new FormData();
+                formData.append('attemptId', attemptId);
+                formData.append('questionId', questionId);
+                formData.append('selectedOptionId', selectedOptionId);
+                formData.append('questionIndex', index);
+
+                fetch('/ExamAttempts/SaveAnswer', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    }
+                }).catch(err => console.error("Error saving answer:", err));
             });
         });
 

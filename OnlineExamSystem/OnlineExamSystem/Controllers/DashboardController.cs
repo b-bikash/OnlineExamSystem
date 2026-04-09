@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
 using OnlineExamSystem.Models.ViewModels;
@@ -70,7 +70,7 @@ namespace OnlineExamSystem.Controllers
             // ================= ADMIN =================
             if (role == "Admin")
             {
-                var now = DateTime.Now;
+                var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
                 var vm = new AdminDashboardViewModel
                 {

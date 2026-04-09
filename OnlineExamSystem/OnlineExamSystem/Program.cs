@@ -47,8 +47,7 @@ var app = builder.Build();
 // 🔐 ADMIN SEEDING (HASH-AWARE, SAFE)
 // =====================================================
 
-if (app.Environment.IsDevelopment())
-{
+
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -70,7 +69,7 @@ if (app.Environment.IsDevelopment())
             context.SaveChanges();
         }
     }
-}
+
 
 
 // ---------------- PIPELINE ----------------

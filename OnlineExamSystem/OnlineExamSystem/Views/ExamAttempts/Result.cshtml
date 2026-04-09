@@ -90,7 +90,10 @@
 @if (Model.Exam.Questions != null && Model.Exam.Questions.Any())
 {
     int i = 1;
-    foreach (var question in Model.Exam.Questions)
+    var random = new Random(Model.Id);
+    var randomizedQuestions = Model.Exam.Questions.OrderBy(q => random.Next()).ToList();
+    
+    foreach (var question in randomizedQuestions)
     {
         var studentAnswer = Model.StudentAnswers.FirstOrDefault(sa => sa.QuestionId == question.Id);
         var selectedOptionId = studentAnswer?.SelectedOptionId;

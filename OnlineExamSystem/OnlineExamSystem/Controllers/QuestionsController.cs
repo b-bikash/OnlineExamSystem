@@ -27,7 +27,7 @@ namespace OnlineExamSystem.Controllers
         // -------------------------------
         private bool IsQuestionModificationLocked(Exam exam)
         {
-            var now = DateTime.Now;
+            var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
             bool hasAttempts = _context.ExamAttempts
                 .Any(ea => ea.ExamId == exam.Id);

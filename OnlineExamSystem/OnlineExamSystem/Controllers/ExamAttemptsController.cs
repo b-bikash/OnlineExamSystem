@@ -69,7 +69,7 @@ namespace OnlineExamSystem.Controllers
                 return RedirectToAction("Index", "Exams");
             }
 
-            var now = DateTime.Now;
+            var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
             if (now < exam.StartDateTime.Value)
             {
@@ -103,7 +103,7 @@ namespace OnlineExamSystem.Controllers
                 ExamId = examId,
                 StudentId = student.Id,
                 CollegeId = student.CollegeId,  // 🔐 MANDATORY TENANT WRITE
-                StartTime = DateTime.Now
+                StartTime = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime()
             };
 
             _context.ExamAttempts.Add(attempt);
@@ -200,7 +200,7 @@ namespace OnlineExamSystem.Controllers
                 ? attempt.Exam.EndDateTime.Value
                 : designatedEndTime;
 
-            if (DateTime.Now > actualEndTime.AddMinutes(1))
+            if (OnlineExamSystem.Helpers.TimeHelper.GetLocalTime() > actualEndTime.AddMinutes(1))
                 return Unauthorized();
 
             // 🔐 Ensure question belongs to this exam + college
@@ -249,7 +249,7 @@ namespace OnlineExamSystem.Controllers
 
             _context.SaveChanges();
 
-            return RedirectToAction("AttemptAll", new { attemptId });
+            return Ok(new { success = true });
         }
 
         // -------------------------------
@@ -299,7 +299,7 @@ namespace OnlineExamSystem.Controllers
             if (answers == null)
                 answers = new Dictionary<int, int>();
 
-            if (DateTime.Now <= actualEndTime.AddMinutes(2))
+            if (OnlineExamSystem.Helpers.TimeHelper.GetLocalTime() <= actualEndTime.AddMinutes(2))
             {
                 var oldAnswers = _context.StudentAnswers
                     .Where(sa =>
@@ -353,7 +353,14 @@ namespace OnlineExamSystem.Controllers
                        && opt.IsCorrect
                  select q.Marks).Sum();
 
-            attempt.EndTime = DateTime.Now;
+            attempt.EndTime = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
+
+            var behaviorLog = GetOrCreateBehaviorLog(student.Id, attempt.ExamId);
+            double totalSeconds = (attempt.EndTime.Value - attempt.StartTime).TotalSeconds;
+            behaviorLog.TotalExamTime = totalSeconds / 60.0;
+            int totalQuestions = attempt.Exam.Questions.Count;
+            if (totalQuestions > 0)
+                behaviorLog.AvgTimePerQuestion = totalSeconds / totalQuestions;
 
             _context.SaveChanges();
 
@@ -412,7 +419,7 @@ namespace OnlineExamSystem.Controllers
 
                 // Student cannot view before exam ends
                 if (attempt.Exam.EndDateTime.HasValue &&
-                    DateTime.Now < attempt.Exam.EndDateTime.Value)
+                    OnlineExamSystem.Helpers.TimeHelper.GetLocalTime() < attempt.Exam.EndDateTime.Value)
                 {
                     TempData["ErrorMessage"] = "Results will be available after the exam ends.";
                     return RedirectToAction("Index", "Exams");
@@ -472,6 +479,55 @@ namespace OnlineExamSystem.Controllers
         }
 
         // -------------------------------
+        // PROCTORING: LOG TAB SWITCH
+        // -------------------------------
+        [HttpPost]
+        public IActionResult LogTabSwitch(int attemptId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var sessionCollegeId = HttpContext.Session.GetInt32("CollegeId");
+
+            if (userId == null || sessionCollegeId == null)
+                return Unauthorized(new { message = "User not authenticated." });
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized(new { message = "Invalid user." });
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null || student.CollegeId != sessionCollegeId.Value)
+                return Unauthorized(new { message = "Student not found or tenant mismatch." });
+
+            var attempt = _context.ExamAttempts
+                .FirstOrDefault(a =>
+                    a.Id == attemptId &&
+                    a.StudentId == student.Id &&
+                    a.CollegeId == student.CollegeId
+                );
+
+            if (attempt == null)
+                return Unauthorized(new { message = "Attempt not found or permission denied." });
+
+            if (attempt.EndTime != null)
+                return BadRequest(new { message = "Exam already submitted." });
+
+            var behaviorLog = GetOrCreateBehaviorLog(student.Id, attempt.ExamId);
+            behaviorLog.TabSwitchCount++;
+            behaviorLog.ViolationCount++;
+            if (behaviorLog.ViolationCount >= 3) behaviorLog.IsSuspicious = true;
+
+            _context.SaveChanges();
+
+            return Ok(new { success = true, tabSwitchCount = behaviorLog.TabSwitchCount });
+        }
+
+        // -------------------------------
         // PROCTORING: LOG FULL SCREEN EXIT
         // -------------------------------
         [HttpPost]
@@ -511,6 +567,12 @@ namespace OnlineExamSystem.Controllers
                 return BadRequest(new { message = "Exam already submitted." });
 
             attempt.FullScreenExitCount++;
+            
+            var behaviorLog = GetOrCreateBehaviorLog(student.Id, attempt.ExamId);
+            behaviorLog.FullscreenExitCount = attempt.FullScreenExitCount;
+            behaviorLog.ViolationCount++;
+            if (behaviorLog.ViolationCount >= 3) behaviorLog.IsSuspicious = true;
+
             _context.SaveChanges();
 
             return Ok(new { success = true, exitCount = attempt.FullScreenExitCount });
@@ -588,6 +650,13 @@ namespace OnlineExamSystem.Controllers
                     SuspiciousReason = request.SuspiciousReason
                 };
 
+                if (request.SuspiciousFlag == true)
+                {
+                    var behaviorLog = GetOrCreateBehaviorLog(student.Id, attempt.ExamId);
+                    behaviorLog.IsSuspicious = true;
+                    behaviorLog.ViolationCount++;
+                }
+
                 _context.ExamProctorLogs.Add(log);
                 _context.SaveChanges();
 
@@ -598,6 +667,23 @@ namespace OnlineExamSystem.Controllers
                 // Log this properly in a real app
                 return StatusCode(500, new { message = "Error saving image.", error = ex.Message });
             }
+        }
+
+        private ExamBehaviorLog GetOrCreateBehaviorLog(int studentId, int examId)
+        {
+            var log = _context.ExamBehaviorLogs.FirstOrDefault(l => l.StudentId == studentId && l.ExamId == examId);
+            if (log == null)
+            {
+                log = new ExamBehaviorLog
+                {
+                    StudentId = studentId,
+                    ExamId = examId,
+                    CreatedAt = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime()
+                };
+                _context.ExamBehaviorLogs.Add(log);
+                _context.SaveChanges(); // Need this to get log.Id if needed, though for saving updates later it's fine.
+            }
+            return log;
         }
     }
 

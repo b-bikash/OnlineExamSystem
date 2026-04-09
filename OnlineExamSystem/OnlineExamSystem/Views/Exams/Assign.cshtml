@@ -1,4 +1,4 @@
-﻿@model OnlineExamSystem.Models.Exam
+@model OnlineExamSystem.Models.Exam
 
 @{
     ViewData["Title"] = "Schedule Exam";
@@ -38,7 +38,7 @@
                 </div>
 
                 @{
-                    var minTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+                    var minTime = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime().ToString("yyyy-MM-ddTHH:mm");
                 }
 
                 <!-- START TIME -->

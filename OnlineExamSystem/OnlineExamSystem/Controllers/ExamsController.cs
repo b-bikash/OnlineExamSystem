@@ -85,7 +85,7 @@ namespace OnlineExamSystem.Controllers
 
             if (!attempts.Any()) return;
 
-            var now = DateTime.Now;
+            var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
             foreach (var attempt in attempts)
             {
@@ -133,7 +133,7 @@ namespace OnlineExamSystem.Controllers
                 if (student == null)
                     return Unauthorized();
 
-                var now = DateTime.Now;
+                var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
                 var exams = _context.Exams
                     .AsNoTracking()
@@ -393,7 +393,7 @@ namespace OnlineExamSystem.Controllers
                 exam.CreatedByTeacherId = teacher.Id; // optional: or allow selecting teacher later
             }
 
-            exam.CreatedAt = DateTime.Now;
+            exam.CreatedAt = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 
             _context.Exams.Add(exam);
             _context.SaveChanges();
@@ -415,7 +415,7 @@ namespace OnlineExamSystem.Controllers
                 return Unauthorized();
 
             if (exam.StartDateTime.HasValue &&
-                exam.StartDateTime.Value <= DateTime.Now)
+                exam.StartDateTime.Value <= OnlineExamSystem.Helpers.TimeHelper.GetLocalTime())
             {
                 TempData["ErrorMessage"] = "This exam has already started and cannot be edited.";
                 return RedirectToAction(nameof(Index));
@@ -439,7 +439,7 @@ namespace OnlineExamSystem.Controllers
                 return Unauthorized();
 
             if (dbExam.StartDateTime.HasValue &&
-                dbExam.StartDateTime.Value <= DateTime.Now)
+                dbExam.StartDateTime.Value <= OnlineExamSystem.Helpers.TimeHelper.GetLocalTime())
             {
                 TempData["ErrorMessage"] = "This exam has already started and cannot be edited.";
                 return RedirectToAction(nameof(Index));
@@ -456,9 +456,31 @@ namespace OnlineExamSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ---------------- DELETE ----------------
+        [HttpGet]
+        public IActionResult Delete(int id)
+        {
+            var exam = _context.Exams.Find(id);
+            if (exam == null)
+                return NotFound();
 
-        [HttpPost]
+            if (!IsOwnerOrAdmin(exam))
+                return Unauthorized();
+
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
+            {
+                if (exam.StartDateTime.HasValue &&
+                    exam.StartDateTime.Value <= OnlineExamSystem.Helpers.TimeHelper.GetLocalTime())
+                {
+                    TempData["ErrorMessage"] = "Started exams cannot be deleted by teachers.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            return View(exam);
+        }
+
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteConfirmed(int id)
         {
@@ -469,11 +491,44 @@ namespace OnlineExamSystem.Controllers
             if (!IsOwnerOrAdmin(exam))
                 return Unauthorized();
 
-            if (exam.StartDateTime.HasValue &&
-                exam.StartDateTime.Value <= DateTime.Now)
+            var role = HttpContext.Session.GetString("Role");
+            if (role != "Admin")
             {
-                TempData["ErrorMessage"] = "Started exams cannot be deleted.";
-                return RedirectToAction(nameof(Index));
+                if (exam.StartDateTime.HasValue &&
+                    exam.StartDateTime.Value <= OnlineExamSystem.Helpers.TimeHelper.GetLocalTime())
+                {
+                    TempData["ErrorMessage"] = "Started exams cannot be deleted by teachers.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            // Manually delete related records if Admin is deleting a Live/Past exam
+            var strLogs = _context.ExamBehaviorLogs.Where(l => l.ExamId == id).ToList();
+            if(strLogs.Any()) _context.ExamBehaviorLogs.RemoveRange(strLogs);
+
+            var attempts = _context.ExamAttempts
+                .Include(a => a.StudentAnswers)
+                .Include(a => a.ExamProctorLogs)
+                .Where(a => a.ExamId == id).ToList();
+
+            if(attempts.Any()) {
+                foreach (var attempt in attempts)
+                {
+                    if(attempt.StudentAnswers.Any()) _context.StudentAnswers.RemoveRange(attempt.StudentAnswers);
+                    if(attempt.ExamProctorLogs.Any()) _context.ExamProctorLogs.RemoveRange(attempt.ExamProctorLogs);
+                }
+                _context.ExamAttempts.RemoveRange(attempts);
+            }
+
+            var questions = _context.Questions
+                .Include(q => q.Options)
+                .Where(q => q.ExamId == id).ToList();
+
+            if(questions.Any()) {
+                foreach(var q in questions) {
+                    if(q.Options.Any()) _context.Options.RemoveRange(q.Options);
+                }
+                _context.Questions.RemoveRange(questions);
             }
 
             _context.Exams.Remove(exam);
@@ -524,7 +579,7 @@ namespace OnlineExamSystem.Controllers
                 ModelState.AddModelError("EndDateTime", $"The assigned time window ({(endDateTime - startDateTime).TotalMinutes} minutes) must be greater than or equal to the exam duration ({exam.DurationInMinutes} minutes).");
             }
 
-            if (startDateTime < DateTime.Now)
+            if (startDateTime < OnlineExamSystem.Helpers.TimeHelper.GetLocalTime())
             {
                 ModelState.AddModelError("StartDateTime", "Start time cannot be in the past.");
             }

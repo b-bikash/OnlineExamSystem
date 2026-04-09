@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @using OnlineExamSystem.Models
 @using OnlineExamSystem.Models.ViewModels
 @model object
@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = "Exams";
     var role = Context.Session.GetString("Role");
-    var now = DateTime.Now;
+    var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
 }
 
 <h2>Exams</h2>
@@ -344,6 +344,15 @@
                                     <i class="bi bi-calendar"></i>
                                 </a>
 
+                                @if (role == "Admin" || role == "Teacher" || role == "TeacherAdmin")
+                                {
+                                    <a asp-action="Delete"
+                                           asp-route-id="@exam.Id"
+                                           class="btn btn-sm btn-danger"
+                                           title="Delete Exam">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                }
                             </div>
                         </td>
                     </tr>
@@ -405,6 +414,12 @@
                             <a asp-action="Results"
                                asp-route-examId="@exam.Id"
                                class="btn btn-sm btn-dark">Results</a>
+                            @if (role == "Admin")
+                            {
+                                <a asp-action="Delete"
+                                   asp-route-id="@exam.Id"
+                                   class="btn btn-sm btn-danger">Delete</a>
+                            }
                         </td>
                     </tr>
                 }
@@ -466,6 +481,12 @@
                                asp-route-id="@exam.Id"
                                asp-route-edit="true"
                                class="btn btn-sm btn-warning">Reschedule</a>
+                            @if (role == "Admin" || role == "Teacher" || role == "TeacherAdmin")
+                            {
+                                <a asp-action="Delete"
+                                   asp-route-id="@exam.Id"
+                                   class="btn btn-sm btn-danger">Delete</a>
+                            }
                         </td>
                     </tr>
                 }
@@ -526,6 +547,12 @@
                             <a asp-action="Results"
                                asp-route-examId="@exam.Id"
                                class="btn btn-sm btn-dark">Results</a>
+                            @if (role == "Admin")
+                            {
+                                <a asp-action="Delete"
+                                   asp-route-id="@exam.Id"
+                                   class="btn btn-sm btn-danger">Delete</a>
+                            }
                         </td>
                     </tr>
                 }
