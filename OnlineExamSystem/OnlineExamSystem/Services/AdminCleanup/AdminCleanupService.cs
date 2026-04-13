@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using OnlineExamSystem.Models;
@@ -8,10 +8,12 @@ namespace OnlineExamSystem.Services.AdminCleanup
     public class AdminCleanupService : IAdminCleanupService
     {
         private readonly ApplicationDbContext _context;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
 
-        public AdminCleanupService(ApplicationDbContext context)
+        public AdminCleanupService(ApplicationDbContext context, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public async Task DeleteCollegeCompletelyAsync(int collegeId)
@@ -60,11 +62,24 @@ namespace OnlineExamSystem.Services.AdminCleanup
                 await _context.SaveChangesAsync();
 
                 // ----------------------------------------
-                // STEP 3: Delete ExamProctorLogs
+                // STEP 3: Delete ExamProctorLogs & Physical Images
                 // ----------------------------------------
                 var proctorLogs = await _context.ExamProctorLogs
                     .Where(p => examAttemptIds.Contains(p.ExamAttemptId))
                     .ToListAsync();
+                    
+                foreach (var log in proctorLogs)
+                {
+                    if (!string.IsNullOrEmpty(log.ImagePath) && log.ImagePath != "EXPIRED")
+                    {
+                        var fileName = System.IO.Path.GetFileName(log.ImagePath);
+                        var physicalPath = System.IO.Path.Combine(_env.WebRootPath, "proctoring", fileName);
+                        if (System.IO.File.Exists(physicalPath))
+                        {
+                            try { System.IO.File.Delete(physicalPath); } catch { }
+                        }
+                    }
+                }
 
                 _context.ExamProctorLogs.RemoveRange(proctorLogs);
                 await _context.SaveChangesAsync();

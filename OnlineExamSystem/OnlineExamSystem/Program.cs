@@ -20,6 +20,9 @@ builder.Services.AddScoped<IDemoDataSeederService, DemoDataSeederService>();
 builder.Services.AddScoped<IQuestionImportService, QuestionImportService>();
 builder.Services.AddScoped<OnlineExamSystem.Services.Email.IEmailService, OnlineExamSystem.Services.Email.EmailService>();
 
+// Background Services
+builder.Services.AddHostedService<OnlineExamSystem.Services.AdminCleanup.ProctoringCleanupBackgroundService>();
+
 // DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
