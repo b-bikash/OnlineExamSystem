@@ -1,0 +1,165 @@
+@model OnlineExamSystem.Models.Exam
+
+@{
+    ViewData["Title"] = "Compatibility Test";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white p-4">
+                    <h3 class="mb-0">Device Compatibility Test</h3>
+                    <p class="mb-0 mt-1">Please ensure your device meets the requirements for the proctored exam.</p>
+                </div>
+                <div class="card-body p-4">
+
+                    <h4 class="mb-4">@Model.Title</h4>
+
+                    <div class="alert alert-info d-flex align-items-center mb-4">
+                        <i class="bi bi-info-circle-fill fs-3 me-3"></i>
+                        <div>
+                            This exam requires a supported web browser (like Chrome, Safari, or Edge), a working webcam, and Full-screen capabilities to ensure a secure environment.
+                        </div>
+                    </div>
+
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3" id="fs-check-item">
+                            <div>
+                                <h5 class="mb-1"><i class="bi bi-arrows-fullscreen me-2"></i>Fullscreen Support</h5>
+                                <small class="text-muted" id="fs-check-text">Checking if your browser supports the Fullscreen API...</small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill" id="fs-badge">Pending</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3" id="cam-check-item">
+                            <div>
+                                <h5 class="mb-1"><i class="bi bi-camera-video me-2"></i>Webcam Access</h5>
+                                <small class="text-muted" id="cam-check-text">Checking for camera permissions...</small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill" id="cam-badge">Pending</span>
+                        </li>
+                    </ul>
+
+                    <!-- Webcam Preview -->
+                    <div class="text-center mb-4" id="webcam-container" style="display: none;">
+                        <p class="fw-bold mb-2">Webcam Preview</p>
+                        <video id="webcam-preview" autoplay playsinline class="border rounded" style="width: 100%; max-width: 320px;"></video>
+                    </div>
+
+                    <div class="alert alert-danger" id="error-message" style="display: none;">
+                        <strong>Compatibility Check Failed:</strong>
+                        <div id="error-text" class="mt-2"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a asp-controller="Exams" asp-action="Index" class="btn btn-outline-secondary px-4">Go Back</a>
+                        <a id="btn-proceed" href="/ExamAttempts/Start?examId=@Model.Id" class="btn btn-success px-5 py-2 disabled" onclick="stopWebcam()">Start Exam</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <script>
+        let fsPassed = false;
+        let camPassed = false;
+        
+        const btnProceed = document.getElementById('btn-proceed');
+        const errorMsg = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+
+        function checkAllPassed() {
+            if (fsPassed && camPassed) {
+                btnProceed.classList.remove('disabled');
+                errorMsg.style.display = 'none';
+            } else {
+                btnProceed.classList.add('disabled');
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.style.display = 'block';
+            const newErr = document.createElement('div');
+            newErr.className = 'mb-1';
+            newErr.innerText = "- " + msg;
+            errorText.appendChild(newErr);
+        }
+
+        function stopWebcam() {
+            const videoElement = document.getElementById('webcam-preview');
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Check Fullscreen API
+            const elem = document.documentElement;
+            const requestFS = elem.requestFullscreen || 
+                              elem.webkitRequestFullscreen || 
+                              elem.mozRequestFullScreen || 
+                              elem.msRequestFullscreen;
+
+            const fsBadge = document.getElementById('fs-badge');
+            const fsText = document.getElementById('fs-check-text');
+
+            if (requestFS) {
+                fsPassed = true;
+                fsBadge.className = 'badge bg-success rounded-pill px-3 py-2';
+                fsBadge.innerText = 'Supported';
+                fsText.innerText = 'Your browser supports Fullscreen mode.';
+            } else {
+                fsPassed = false;
+                fsBadge.className = 'badge bg-danger rounded-pill px-3 py-2';
+                fsBadge.innerText = 'Not Supported';
+                fsText.innerHTML = '<span class="text-danger fw-bold">Fullscreen API is not available on this device.</span>';
+                showError("Your device (e.g., iPhone) or browser (e.g., in-app browser) does not natively support Fullscreen mode. Please open this page in a standard browser like Google Chrome, Android Samsung Browser, or Firefox.");
+            }
+
+            // 2. Check Webcam
+            const camBadge = document.getElementById('cam-badge');
+            const camText = document.getElementById('cam-check-text');
+            const videoElement = document.getElementById('webcam-preview');
+            const webcamContainer = document.getElementById('webcam-container');
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        camPassed = true;
+                        camBadge.className = 'badge bg-success rounded-pill px-3 py-2';
+                        camBadge.innerText = 'Access Granted';
+                        camText.innerText = 'Webcam successfully connected.';
+                        
+                        webcamContainer.style.display = 'block';
+                        videoElement.srcObject = stream;
+                        
+                        checkAllPassed();
+                    })
+                    .catch(function(err) {
+                        camPassed = false;
+                        camBadge.className = 'badge bg-danger rounded-pill px-3 py-2';
+                        camBadge.innerText = 'Denied / Error';
+                        camText.innerHTML = '<span class="text-danger fw-bold">Unable to access your webcam.</span>';
+                        showError("Webcam access was denied or no camera device was found. Please allow camera permissions in your browser settings and refresh the page.");
+                        checkAllPassed();
+                    });
+            } else {
+                camPassed = false;
+                camBadge.className = 'badge bg-danger rounded-pill px-3 py-2';
+                camBadge.innerText = 'Not Supported';
+                camText.innerHTML = '<span class="text-danger fw-bold">Webcam API is not available in your browser.</span>';
+                showError("Your browser does not support webcam access or you are not using a secure (HTTPS) connection.");
+                checkAllPassed();
+            }
+
+            // Initial call if FS fails early
+            checkAllPassed();
+        });
+    </script>
+}

@@ -23,6 +23,69 @@ namespace OnlineExamSystem.Controllers
         }
 
         // -------------------------------
+        // COMPATIBILITY TEST (PRE-FLIGHT)
+        // -------------------------------
+        [HttpGet]
+        public IActionResult CompatibilityTest(int examId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            var user = _context.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null || !user.IsActive || user.Role != "Student")
+                return Unauthorized();
+
+            var student = _context.Students
+                .AsNoTracking()
+                .FirstOrDefault(s => s.UserId == user.Id);
+
+            if (student == null)
+                return Unauthorized();
+
+            if (!student.IsProfileCompleted)
+                return RedirectToAction("Profile", "Students");
+
+            var exam = _context.Exams
+                .Include(e => e.Subject)
+                    .ThenInclude(s => s.CourseSubjects)
+                .AsNoTracking()
+                .FirstOrDefault(e =>
+                    e.Id == examId &&
+                    e.CollegeId == student.CollegeId &&
+                    e.Subject.CourseSubjects.Any(cs => cs.CourseId == student.CourseId)
+                );
+
+            if (exam == null)
+                return Unauthorized();
+
+            if (!exam.StartDateTime.HasValue || !exam.EndDateTime.HasValue)
+            {
+                TempData["ErrorMessage"] = "This exam is not scheduled yet.";
+                return RedirectToAction("Index", "Exams");
+            }
+
+            var now = OnlineExamSystem.Helpers.TimeHelper.GetLocalTime();
+
+            if (now < exam.StartDateTime.Value)
+            {
+                TempData["ErrorMessage"] = "This exam has not started yet.";
+                return RedirectToAction("Index", "Exams");
+            }
+
+            if (now > exam.EndDateTime.Value)
+            {
+                TempData["ErrorMessage"] = "This exam has already ended.";
+                return RedirectToAction("Index", "Exams");
+            }
+
+            return View(exam);
+        }
+
+        // -------------------------------
         // START EXAM
         // -------------------------------
         [HttpGet]

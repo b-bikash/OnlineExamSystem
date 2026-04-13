@@ -253,14 +253,29 @@
 
         btnEnterFullscreen.addEventListener('click', () => {
             const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.mozRequestFullScreen) { // Firefox
-                elem.mozRequestFullScreen();
-            } else if (elem.webkitRequestFullscreen) { // Chrome, Safari and Opera
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { // IE/Edge
-                elem.msRequestFullscreen();
+            
+            const handleFullscreenError = (err) => {
+                console.warn("Fullscreen API not supported or failed: ", err);
+                alert("Fullscreen mode could not be enabled. This is required to take the exam.\n\nPossible reasons:\n1. You are using an unsupported device.\n2. You are using an in-app browser (like Instagram/WhatsApp).\n\nPlease open this page in a standard browser like Google Chrome and try again.");
+                // We keep the overlay visible, strictly blocking them from proceeding.
+            };
+
+            const requestFS = elem.requestFullscreen || 
+                              elem.webkitRequestFullscreen || 
+                              elem.mozRequestFullScreen || 
+                              elem.msRequestFullscreen;
+
+            if (requestFS) {
+                try {
+                    const promise = requestFS.call(elem);
+                    if (promise && typeof promise.catch === 'function') {
+                        promise.catch(handleFullscreenError);
+                    }
+                } catch (err) {
+                    handleFullscreenError(err);
+                }
+            } else {
+                handleFullscreenError(new Error("Fullscreen API not available."));
             }
         });
 
